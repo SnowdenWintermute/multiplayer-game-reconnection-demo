@@ -5,7 +5,7 @@ import {
   Username,
 } from "../../aliases.js";
 import { ERROR_MESSAGES } from "../../error-messages.js";
-import { invariant } from "../../utils.js";
+import { invariant } from "../../utils/index.js";
 import { GameRegistry } from "../game-registry/index.js";
 import {
   ReconnectionKey,

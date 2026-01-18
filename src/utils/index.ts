@@ -1,4 +1,4 @@
-import { ERROR_MESSAGES } from "./error-messages.js";
+import { ERROR_MESSAGES } from "../error-messages.js";
 
 export function invariant(
   condition: boolean,
@@ -7,7 +7,7 @@ export function invariant(
   if (!condition) {
     console.trace();
     throw new Error(
-      `${ERROR_MESSAGES.CHECKED_EXPECTATION_FAILED}${message ? `: ${message}` : ""}`
+      `${ERROR_MESSAGES.INVARIANT_FALED}${message ? `: ${message}` : ""}`
     );
   }
 }

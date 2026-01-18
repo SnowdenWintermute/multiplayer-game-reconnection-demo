@@ -1,9 +1,9 @@
 import { GameRegistry } from "../game-registry/index.js";
-import { IdentityProviderService } from "../services/identity-provider.js";
 import { UserSessionRegistry } from "../sessions/user-session-registry.js";
 import { PendingReconnectionStoreService } from "../services/pending-reconnection-store/index.js";
 import { GameSessionStoreService } from "../services/game-session-store/index.js";
 import { WebSocketServer, WebSocket } from "ws";
+import { IdentityProviderService } from "../services/identity-provider/index.js";
 
 export class LobbyServer {
   private userSessionRegistry = new UserSessionRegistry();

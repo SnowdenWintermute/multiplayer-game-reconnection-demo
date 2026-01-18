@@ -1,5 +1,5 @@
 import { ConnectionId, GameName, Username } from "../../aliases.js";
-import { invariant } from "../../utils.js";
+import { invariant } from "../../utils/index.js";
 import { UserId } from "../services/tagged-user-id.js";
 import { ConnectionSessionRegistry } from "./connection-session-registry.js";
 import { UserSession } from "./user-session.js";

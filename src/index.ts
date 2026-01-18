@@ -1,3 +1,7 @@
+// INTENTIONALLY OMITTED
+// - joining/leaving "lobby channel"
+// - obtaining "game list"
+//
 // identity provider service
 // user session registry
 // transport abstraction

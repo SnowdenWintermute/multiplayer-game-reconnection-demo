@@ -7,6 +7,10 @@ export const ERROR_MESSAGES = {
     ALREADY_IN_GAME: "Already in a game",
     NOT_IN_GAME: "Not in a game",
   },
-  GAME: { NOT_FOUND: "Game not found" },
+  GAME: {
+    NOT_FOUND: "Game not found",
+    ALREADY_EXISTS: "A game by that name already exists",
+    ALREADY_HANDED_OFF: "The game was already handed off to the game server",
+  },
   INVARIANT_FALED: "Code was reached that should have been impossible",
 };
