@@ -1,0 +1,16 @@
+# node dependencies
+node_modules/
+
+# build output
+dist/
+
+# typescript incremental builds
+*.tsbuildinfo
+
+# environment variables / secrets
+.env
+.env.*.local
+
+# mac computers add this to all their folders
+**/.DS_Store
+
