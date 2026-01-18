@@ -79,7 +79,7 @@ export class LobbyGameLifecycleController {
 
     session.setCurrentGame(game.name);
 
-    game.registerPlayerFromLobbyUser(session.username);
+    game.playerRegistry.registerPlayerFromLobbyUser(session.username);
 
     session.subscribeToChannel(game.getChannelName());
 
@@ -113,7 +113,7 @@ export class LobbyGameLifecycleController {
       this.updateDispatchFactory
     );
 
-    game.removePlayer(session.username);
+    game.playerRegistry.removePlayer(session.username);
     session.currentGameName = null;
     session.unsubscribeFromChannel(game.getChannelName());
 
@@ -122,9 +122,7 @@ export class LobbyGameLifecycleController {
       data: { game: null },
     });
 
-    const noPlayersRemain = game.players.size === 0;
-    if (noPlayersRemain) {
-      console.log("no players remain, removing game from registry");
+    if (game.playerRegistry.isEmpty()) {
       this.gameRegistry.unregisterGame(game.name);
       return outbox; // no one is left to notify about the player leaving so return early
     }
@@ -142,10 +140,7 @@ export class LobbyGameLifecycleController {
 
     game.requireGameStartPrerequisites();
 
-    const player = game.getExpectedPlayer(session.username);
-    // this should implicitly check for empty parties since a player with a character
-    // must be in a party, and a party can only exist while at least one player is in it
-    player.requireHasCharacters();
+    game.playerRegistry.requirePlayer(session.username);
 
     const allPlayersReadied = game.togglePlayerReadyToStartGameStatus(
       session.username

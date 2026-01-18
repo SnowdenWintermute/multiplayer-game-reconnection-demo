@@ -11,6 +11,10 @@ export const ERROR_MESSAGES = {
     NOT_FOUND: "Game not found",
     ALREADY_EXISTS: "A game by that name already exists",
     ALREADY_HANDED_OFF: "The game was already handed off to the game server",
+    ALREADY_STARTED: "The game was already started",
+  },
+  PLAYER: {
+    DOES_NOT_EXIST: "No player was found",
   },
   INVARIANT_FALED: "Code was reached that should have been impossible",
 };
