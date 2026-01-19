@@ -82,7 +82,7 @@ export class MyGameClass {
     if (this.timeStarted !== null) {
       throw new Error(ERROR_MESSAGES.GAME.ALREADY_STARTED);
     }
-    this._timeStarted = Date.now();
+    this._timeStarted = Date.now() as Milliseconds;
   }
 
   /** returns if all players are now ready to start game */

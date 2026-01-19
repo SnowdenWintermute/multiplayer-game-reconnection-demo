@@ -3,6 +3,7 @@ import {
   GuestSessionReconnectionToken,
   Milliseconds,
 } from "../../../aliases.js";
+import { MyGameClass } from "../../../game/index.js";
 import {
   MessageFromServer,
   MessageFromServerType,
@@ -115,7 +116,7 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
       gameServerName
     );
 
-    this.pendingReconnectionStoreService.writeDisconnectedSession(
+    this.pendingReconnectionStoreService.writePendingReconnection(
       session.requireReconnectionKey(),
       pendingReconnection
     );
@@ -128,33 +129,7 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     });
 
     const onReconnectionTimeout = async () => {
-      this.reconnectionOpportunityManager.remove(
-        session.requireReconnectionKey()
-      );
-      try {
-        await this.pendingReconnectionStoreService.deletePendingReconnection(
-          session.requireReconnectionKey()
-        );
-      } catch (error) {
-        console.error("failed to delete disconnectedSession:", error);
-      }
-
-      const reconnectionTimeoutOutbox = new MessageDispatchOutbox(
-        this.updateDispatchFactory
-      );
-
-      reconnectionTimeoutOutbox.pushToChannel(game.getChannelName(), {
-        type: MessageFromServerType.PlayerReconnectionTimedOut,
-        data: { username: session.username },
-      });
-
-      game.inputLock.remove(session.taggedUserId.id);
-
-      const leaveGameHandlerOutbox =
-        await this.gameLifecycleController.leaveGameHandler(session);
-      reconnectionTimeoutOutbox.pushFromOther(leaveGameHandlerOutbox);
-
-      this.dispatchOutboxMessages(reconnectionTimeoutOutbox);
+      this.reconnectionTimeoutHandler(session, game);
     };
 
     this.reconnectionOpportunityManager.add(
@@ -167,6 +142,40 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     );
 
     return outbox;
+  }
+
+  private async reconnectionTimeoutHandler(
+    session: UserSession,
+    game: MyGameClass
+  ) {
+    this.reconnectionOpportunityManager.remove(
+      session.requireReconnectionKey()
+    );
+
+    try {
+      await this.pendingReconnectionStoreService.deletePendingReconnection(
+        session.requireReconnectionKey()
+      );
+    } catch (error) {
+      console.error("failed to delete disconnectedSession:", error);
+    }
+
+    const reconnectionTimeoutOutbox = new MessageDispatchOutbox(
+      this.updateDispatchFactory
+    );
+
+    reconnectionTimeoutOutbox.pushToChannel(game.getChannelName(), {
+      type: MessageFromServerType.PlayerReconnectionTimedOut,
+      data: { username: session.username },
+    });
+
+    game.inputLock.remove(session.taggedUserId.id);
+
+    const leaveGameHandlerOutbox =
+      await this.gameLifecycleController.leaveGameHandler(session);
+    reconnectionTimeoutOutbox.pushFromOther(leaveGameHandlerOutbox);
+
+    this.dispatchOutboxMessages(reconnectionTimeoutOutbox);
   }
 
   async attemptReconnectionClaim(session: UserSession): Promise<void> {

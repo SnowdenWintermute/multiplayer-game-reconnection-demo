@@ -9,17 +9,17 @@ export class HeartbeatTask {
   ) {}
 }
 
-export class HeartbeatScheduler<K> {
+export class HeartbeatScheduler {
   private interval: NodeJS.Timeout | null = null;
-  private readonly tasks = new Map<K, HeartbeatTask>();
+  private readonly tasks = new Map<string, HeartbeatTask>();
 
   constructor(private readonly tickMs: Milliseconds) {}
 
-  register(key: K, task: HeartbeatTask): void {
+  register(key: string, task: HeartbeatTask): void {
     this.tasks.set(key, task);
   }
 
-  unregister(key: K): void {
+  unregister(key: string): void {
     this.tasks.delete(key);
   }
 

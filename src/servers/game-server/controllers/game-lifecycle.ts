@@ -9,6 +9,7 @@ import { MessageDispatchFactory } from "../../message-delivery/message-dispatch-
 import { MessageDispatchOutbox } from "../../message-delivery/outbox.js";
 import { ActiveGameStatus } from "../../services/game-session-store/active-game-status.js";
 import { GameSessionStoreService } from "../../services/game-session-store/index.js";
+import { PendingReconnectionStoreService } from "../../services/pending-reconnection-store/index.js";
 import { UserSessionRegistry } from "../../sessions/user-session-registry.js";
 import { UserSession } from "../../sessions/user-session.js";
 
@@ -17,6 +18,7 @@ export class GameServerGameLifecycleController {
     private readonly gameRegistry: GameRegistry,
     private readonly userSessionRegistry: UserSessionRegistry,
     private readonly gameSessionStoreService: GameSessionStoreService,
+    private readonly pendingReconnectionStoreService: PendingReconnectionStoreService,
     private readonly updateDispatchFactory: MessageDispatchFactory<MessageFromServer>
   ) {}
 
@@ -134,10 +136,15 @@ export class GameServerGameLifecycleController {
     game.playerRegistry.removePlayer(session.username);
 
     if (game.playerRegistry.isEmpty()) {
-      this.gameRegistry.unregisterGame(game.name);
-      this.gameSessionStoreService.deleteActiveGameStatus(game.name);
+      this.handleGameEnded(game);
     }
 
     return outbox;
+  }
+
+  private handleGameEnded(game: MyGameClass) {
+    this.gameRegistry.unregisterGame(game.name);
+    this.gameSessionStoreService.deleteActiveGameStatus(game.name);
+    this.pendingReconnectionStoreService.deleteAllInGame(game.name);
   }
 }

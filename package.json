@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest watch --reporter=verbose",
+    "compile": "npx tsc --watch"
   },
   "author": "",
   "license": "ISC",
@@ -16,15 +18,17 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@types/libsodium-wrappers": "^0.7.14",
     "@types/lodash.clonedeep": "^4.5.9",
     "@types/node": "^25.0.9",
     "@types/ws": "^8.18.1",
-    "@types/libsodium-wrappers": "^0.7.14",
+    "@typescript-eslint/eslint-plugin": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.0",
+    "eslint": "^8",
     "prettier": "^3.8.0",
     "ts-node": "^10.9.2",
+    "tsc-watch": "^7.2.0",
     "typescript": "^5.9.3",
-    "eslint": "^8",
-    "@typescript-eslint/parser": "^8.33.0",
-    "@typescript-eslint/eslint-plugin": "^8.33.0"
+    "vitest": "^4.0.17"
   }
 }

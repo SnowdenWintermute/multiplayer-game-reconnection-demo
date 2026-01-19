@@ -34,7 +34,7 @@ export class LobbyServer extends BaseServer {
     private readonly identityProviderService: IdentityProviderService,
     private readonly pendingReconnectionStoreService: PendingReconnectionStoreService,
     private readonly gameSessionStoreService: GameSessionStoreService,
-    private readonly websocketServer: WebSocketServer,
+    public readonly websocketServer: WebSocketServer,
     private readonly gameServerSessionClaimTokenCodec: GameServerSessionClaimTokenCodec
   ) {
     super("Lobby");
@@ -72,6 +72,10 @@ export class LobbyServer extends BaseServer {
         await this.parseIdentityContextFromHandshakeRequest(request);
       this.connectionHandler(socket, identityResolutionContext);
     });
+
+    console.log(
+      `${this.name} listening on port ${websocketServer.options.port}`
+    );
   }
 
   private async connectionHandler(

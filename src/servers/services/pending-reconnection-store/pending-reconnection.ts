@@ -8,7 +8,7 @@ import {
 import { ERROR_MESSAGES } from "../../../error-messages.js";
 import { GameRegistry } from "../../game-registry/index.js";
 import { UserSession } from "../../sessions/user-session.js";
-import { TaggedUserId } from "../tagged-user-id.js";
+import { TaggedUserId } from "../identity-provider/tagged-user-id.js";
 
 export class PendingReconnection {
   constructor(

@@ -17,6 +17,8 @@ import { GameServerSessionLifecycleController } from "./controllers/session-life
 import { ActiveGameStatus } from "../services/game-session-store/active-game-status.js";
 import { ReconnectionOpportunityManager } from "./reconnection/reconnection-opportunity-manager.js";
 import { GameServerReconnectionProtocol } from "./reconnection/reconnection-protocol.js";
+import { invariant } from "../../utils/index.js";
+import { ConnectionContextType } from "../reconnection-protocol.js";
 
 export interface GameServerExternalServices {
   gameSessionStoreService: GameSessionStoreService;
@@ -24,6 +26,7 @@ export interface GameServerExternalServices {
 }
 
 const GAME_RECORD_HEARTBEAT_MS = (1000 * 10) as Milliseconds;
+const ACTIVE_GAME_RECORD_REFRESH_HEARTBEAT_TASK_NAME = "active games heartbeat";
 
 export class GameServer extends BaseServer {
   private readonly gameRegistry = new GameRegistry();
@@ -43,7 +46,7 @@ export class GameServer extends BaseServer {
     readonly name: GameServerName,
     private readonly pendingReconnectionStoreService: PendingReconnectionStoreService,
     private readonly gameSessionStoreService: GameSessionStoreService,
-    private readonly websocketServer: WebSocketServer,
+    public readonly websocketServer: WebSocketServer,
     private readonly gameServerSessionClaimTokenCodec: GameServerSessionClaimTokenCodec
   ) {
     super(name);
@@ -60,6 +63,7 @@ export class GameServer extends BaseServer {
       this.gameRegistry,
       this.userSessionRegistry,
       gameSessionStoreService,
+      pendingReconnectionStoreService,
       this.updateDispatchFactory
     );
 
@@ -93,57 +97,66 @@ export class GameServer extends BaseServer {
         );
     });
 
-    this.heartbeatScheduler.register("active games heartbeat", heartbeat);
+    this.heartbeatScheduler.register(
+      ACTIVE_GAME_RECORD_REFRESH_HEARTBEAT_TASK_NAME,
+      heartbeat
+    );
   }
 
   async connectionHandler(
     socket: WebSocket,
     identityResolutionContext: ConnectionIdentityResolutionContext
   ) {
-    // const session = await this.sessionLifecycleController.createSession(
-    //   connectionEndpoint.id,
-    //   identityResolutionContext
-    // );
-    // const { username, taggedUserId, connectionId } = session;
-    // console.info(
-    //   `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) joined the [${this.name}] game server`
-    // );
-    // const userConnectionEndpoint = connectionEndpoint.toTyped<
-    //   GameStateUpdate,
-    //   ClientIntent
-    // >();
-    // this.outgoingMessagesGateway.registerEndpoint(userConnectionEndpoint);
-    // const gameName = session.currentGameName;
-    // if (gameName === null) {
-    //   throw new Error("should have been set from their token in createSession");
-    // }
-    // const existingGame =
-    //   await this.gameLifecycleController.getOrInitializeGame(gameName);
-    // this.attachIntentHandlersToSessionConnection(
-    //   session,
-    //   userConnectionEndpoint,
-    //   this.intentHandlers
-    // );
-    // const gameIsInProgress = existingGame.getTimeStarted() !== null;
-    // const connectionContext =
-    //   await this.reconnectionProtocol.evaluateConnectionContext(
-    //     session,
-    //     gameIsInProgress
-    //   );
-    // if (connectionContext.type === ConnectionContextType.Reconnection) {
-    //   await connectionContext.attemptReconnectionClaim();
-    // }
-    // const outbox =
-    //   await this.sessionLifecycleController.activateSession(session);
-    // const joinGameOutbox = await this.gameLifecycleController.joinGameHandler(
-    //   gameName,
-    //   session
-    // );
-    // outbox.pushFromOther(joinGameOutbox);
-    // const refreshedReconnectionTokenOutbox =
-    //   await this.reconnectionProtocol.issueReconnectionCredential(session);
-    // outbox.pushFromOther(refreshedReconnectionTokenOutbox);
-    // this.dispatchOutboxMessages(outbox);
+    const connectionId = this.userSessionRegistry.issueConnectionId();
+    const session = await this.sessionLifecycleController.createSession(
+      connectionId,
+      identityResolutionContext
+    );
+
+    const { username, taggedUserId } = session;
+
+    const connectionLogMessage = `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) joined the [${this.name}] game server`;
+    console.info(connectionLogMessage);
+
+    this.outgoingMessagesGateway.registerEndpoint(connectionId, socket);
+
+    const gameName = session.currentGameName;
+    invariant(
+      gameName !== null,
+      "game name should have been set from their token in createSession"
+    );
+
+    const existingGame =
+      await this.gameLifecycleController.getOrInitializeGame(gameName);
+
+    this.attachIntentHandlersToSessionConnection(
+      session,
+      socket,
+      this.messageHandlers
+    );
+
+    const gameIsInProgress = existingGame.timeStarted !== null;
+    const connectionContext =
+      await this.reconnectionProtocol.evaluateConnectionContext(
+        session,
+        gameIsInProgress
+      );
+
+    if (connectionContext.type === ConnectionContextType.Reconnection) {
+      await connectionContext.attemptReconnectionClaim();
+    }
+
+    const outbox =
+      await this.sessionLifecycleController.activateSession(session);
+    const joinGameOutbox = await this.gameLifecycleController.joinGameHandler(
+      gameName,
+      session
+    );
+    outbox.pushFromOther(joinGameOutbox);
+    const refreshedReconnectionTokenOutbox =
+      await this.reconnectionProtocol.issueReconnectionCredential(session);
+    outbox.pushFromOther(refreshedReconnectionTokenOutbox);
+    this.dispatchOutboxMessages(outbox);
   }
 
   protected async disconnectionHandler(session: UserSession, code: number) {
@@ -151,18 +164,18 @@ export class GameServer extends BaseServer {
       `-- ${session.username} (${session.connectionId}) disconnected from ${this.name} game server. Disconnect code - ${code}`
     );
 
-    // const outbox = await this.reconnectionProtocol.onPlayerDisconnected(
-    //   session,
-    //   this.name
-    // );
+    const outbox = await this.reconnectionProtocol.onPlayerDisconnected(
+      session,
+      this.name
+    );
 
-    // const cleanupSessionOutbox =
-    //   await this.sessionLifecycleController.cleanupSession(session);
-    // outbox.pushFromOther(cleanupSessionOutbox);
-    // this.outgoingMessagesGateway.unregisterEndpoint(session.connectionId);
+    const cleanupSessionOutbox =
+      await this.sessionLifecycleController.cleanupSession(session);
+    outbox.pushFromOther(cleanupSessionOutbox);
+    this.outgoingMessagesGateway.unregisterEndpoint(session.connectionId);
 
-    // outbox.removeRecipients([session.connectionId]);
+    outbox.removeRecipients([session.connectionId]);
 
-    // this.dispatchOutboxMessages(outbox);
+    this.dispatchOutboxMessages(outbox);
   }
 }
