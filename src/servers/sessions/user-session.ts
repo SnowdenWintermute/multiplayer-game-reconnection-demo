@@ -8,14 +8,14 @@ import { ERROR_MESSAGES } from "../../error-messages.js";
 import { invariant } from "../../utils/index.js";
 import { GameRegistry } from "../game-registry/index.js";
 import {
-  ReconnectionKey,
-  ReconnectionKeyType,
-} from "../services/pending-reconnection-store/index.js";
-import {
   AuthTaggedUserId,
   TaggedUserId,
   UserIdType,
-} from "../services/tagged-user-id.js";
+} from "../services/identity-provider/tagged-user-id.js";
+import {
+  ReconnectionKey,
+  ReconnectionKeyType,
+} from "../services/pending-reconnection-store/index.js";
 import { ConnectionSession } from "./connection-session.js";
 
 export class UserSession extends ConnectionSession {
@@ -85,7 +85,7 @@ export class UserSession extends ConnectionSession {
     return this.guestReconnectionToken;
   }
 
-  getReconnectionKey(): ReconnectionKey {
+  getReconnectionKeyOption(): null | ReconnectionKey {
     switch (this.taggedUserId.type) {
       case UserIdType.Auth: {
         return {
@@ -95,15 +95,22 @@ export class UserSession extends ConnectionSession {
       }
       case UserIdType.Guest: {
         const reconnectionTokenOption = this.getGuestReconnectionTokenOption();
-        invariant(
-          reconnectionTokenOption !== null,
-          "reconnectionTokenOption was null"
-        );
+
+        if (!reconnectionTokenOption) {
+          return null;
+        }
+
         return {
           type: ReconnectionKeyType.Guest,
           reconnectionToken: reconnectionTokenOption,
         };
       }
     }
+  }
+
+  requireReconnectionKey() {
+    const key = this.getReconnectionKeyOption();
+    invariant(key !== null);
+    return key;
   }
 }

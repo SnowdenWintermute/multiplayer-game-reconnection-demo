@@ -13,6 +13,7 @@ import {
 } from "../../services/identity-provider/index.js";
 import { UserSessionRegistry } from "../../sessions/user-session-registry.js";
 import { UserSession } from "../../sessions/user-session.js";
+import { LobbyGameLifecycleController } from "./game-lifecycle.js";
 
 export class LobbySessionLifecycleController implements SessionLifecycleController<MessageFromServer> {
   constructor(
