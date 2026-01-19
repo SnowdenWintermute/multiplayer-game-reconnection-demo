@@ -27,7 +27,8 @@ export class LobbyServer extends BaseServer {
 
   readonly sessionLifecycleController: LobbySessionLifecycleController;
   readonly gameLifecycleController: LobbyGameLifecycleController;
-  private userIntentHandlers = createLobbyMessageFromClientHandlers(this);
+  private messageFromClientHandlers =
+    createLobbyMessageFromClientHandlers(this);
 
   constructor(
     private readonly identityProviderService: IdentityProviderService,
@@ -69,7 +70,7 @@ export class LobbyServer extends BaseServer {
     websocketServer.on("connection", async (socket, request) => {
       const identityResolutionContext =
         await this.parseIdentityContextFromHandshakeRequest(request);
-      // this.connectionHandler(socket);
+      this.connectionHandler(socket, identityResolutionContext);
     });
   }
 
@@ -108,7 +109,7 @@ export class LobbyServer extends BaseServer {
       this.attachIntentHandlersToSessionConnection(
         session,
         socket,
-        this.userIntentHandlers
+        this.messageFromClientHandlers
       );
 
       const outbox =
@@ -117,7 +118,16 @@ export class LobbyServer extends BaseServer {
     }
   }
 
-  protected disconnectionHandler(session: UserSession): Promise<void> {
-    throw new Error("Method not implemented.");
+  protected async disconnectionHandler(
+    session: UserSession,
+    code: number
+  ): Promise<void> {
+    console.info(
+      `-- ${session.username} (${session.connectionId})  disconnected. Code - ${code}`
+    );
+    const outbox =
+      await this.sessionLifecycleController.cleanupSession(session);
+    this.outgoingMessagesGateway.unregisterEndpoint(session.connectionId);
+    this.dispatchOutboxMessages(outbox);
   }
 }

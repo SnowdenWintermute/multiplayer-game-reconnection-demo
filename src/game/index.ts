@@ -2,6 +2,7 @@ import {
   GameId,
   GameName,
   MessageDispatchChannelName,
+  Milliseconds,
   Username,
 } from "../aliases.js";
 import { ERROR_MESSAGES } from "../error-messages.js";
@@ -14,9 +15,9 @@ const GAME_CHANNEL_PREFIX = "game-";
 
 export class MyGameClass {
   private _playerRegistry = new PlayerRegistry();
-  private _timeHandedOff: number | null = null;
-  private _timeStarted: number | null = null;
-  private inputLock = new ReferenceCountedLock<UserId>();
+  private _timeHandedOff: Milliseconds | null = null;
+  private _timeStarted: Milliseconds | null = null;
+  public inputLock = new ReferenceCountedLock<UserId>();
   private playersReadied = new Set<Username>();
 
   constructor(
@@ -49,7 +50,7 @@ export class MyGameClass {
   }
 
   setAsHandedOff() {
-    this._timeHandedOff = Date.now();
+    this._timeHandedOff = Date.now() as Milliseconds;
   }
 
   getChannelName() {

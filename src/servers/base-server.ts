@@ -12,10 +12,7 @@ import { UserSessionRegistry } from "./sessions/user-session-registry.js";
 import { UserSession } from "./sessions/user-session.js";
 import { WebSocket } from "ws";
 import { ConnectionIdentityResolutionContext } from "./services/identity-provider/index.js";
-import {
-  GuestSessionReconnectionToken,
-  IdentityProviderId,
-} from "../aliases.js";
+import { GuestSessionReconnectionToken } from "../aliases.js";
 
 export abstract class BaseServer {
   readonly userSessionRegistry = new UserSessionRegistry();
@@ -41,25 +38,14 @@ export abstract class BaseServer {
       request.headers.cookie?.split("; ").map((c) => c.split("=")) ?? []
     );
 
-    const authUserIdToken = cookies["authUserIdToken"];
-    let authUserId: IdentityProviderId | undefined = undefined;
-    if (authUserIdToken !== undefined) {
-      authUserId = await this.getUserIdFromInternalService(authUserIdToken);
-    }
+    const authToken = cookies["authUserIdToken"];
 
     return {
       clientCachedGuestReconnectionToken:
         (reconnectionToken as GuestSessionReconnectionToken) || undefined,
       encodedGameServerSessionClaimToken: sessionClaimToken || undefined,
-      authUserId,
+      authToken,
     };
-  }
-
-  private async getUserIdFromInternalService(authToken: string) {
-    // make an internal call to your identity provider and get
-    // the user id from the token if it is valid and an auth session
-    // exists that corresponds to the token's information
-    return undefined;
   }
 
   protected attachIntentHandlersToSessionConnection(
@@ -101,8 +87,8 @@ export abstract class BaseServer {
       } catch (error) {}
     });
 
-    userConnectionEndpoint.on("close", () => {
-      this.disconnectionHandler(session);
+    userConnectionEndpoint.on("close", (code) => {
+      this.disconnectionHandler(session, code);
     });
   }
 
@@ -127,5 +113,9 @@ export abstract class BaseServer {
     }
   }
 
-  protected abstract disconnectionHandler(session: UserSession): Promise<void>;
+  /** Disconnect codes defined here: https://www.rfc-editor.org/rfc/rfc6455#section-7.4.1 */
+  protected abstract disconnectionHandler(
+    session: UserSession,
+    code: number
+  ): Promise<void>;
 }

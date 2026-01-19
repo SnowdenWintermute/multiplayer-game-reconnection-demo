@@ -83,7 +83,8 @@ export class LobbySessionLifecycleController implements SessionLifecycleControll
       outbox.pushFromOther(leaveGameHandlerOutbox);
     }
 
-    // remove them from the lobby channel if they were in it
+    // example cleanup: remove them from the lobby channel if they were in it
+    // and tell connected clients about it
 
     this.userSessionRegistry.unregister(session.connectionId);
 

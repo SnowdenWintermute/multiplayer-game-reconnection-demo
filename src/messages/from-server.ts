@@ -1,4 +1,8 @@
-import { GuestSessionReconnectionToken, Username } from "../aliases.js";
+import {
+  GuestSessionReconnectionToken,
+  Milliseconds,
+  Username,
+} from "../aliases.js";
 import { MyGameClass } from "../game/index.js";
 import { GameServerConnectionInstructions } from "../servers/lobby-server/game-handoff/game-server-connection-instructions.js";
 
@@ -46,6 +50,9 @@ export interface MessageFromServerMap {
   };
   [MessageFromServerType.GameServerConnectionInstructions]: {
     connectionInstructions: GameServerConnectionInstructions;
+  };
+  [MessageFromServerType.GameStarted]: {
+    timeStarted: Milliseconds;
   };
 }
 

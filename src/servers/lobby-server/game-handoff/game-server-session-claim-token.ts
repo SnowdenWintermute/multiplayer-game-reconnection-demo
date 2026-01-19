@@ -22,7 +22,8 @@ export class GameServerSessionClaimToken {
 
   static readonly TimeToLive: Milliseconds = (1000 * 5 * 60) as Milliseconds;
   static createExpirationTimestamp() {
-    return Date.now() + GameServerSessionClaimToken.TimeToLive;
+    return (Date.now() +
+      GameServerSessionClaimToken.TimeToLive) as Milliseconds;
   }
 }
 
