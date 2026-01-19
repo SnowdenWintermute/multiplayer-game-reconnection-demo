@@ -9,7 +9,10 @@ import { EncryptionHelpers } from "../cryptography/index.js";
 import { GameServer } from "../servers/game-server/index.js";
 import { GameServerName } from "../aliases.js";
 import { MessageFromServer } from "../messages/from-server.js";
-import { MessageFromClientType } from "../messages/from-client.js";
+import {
+  MessageFromClient,
+  MessageFromClientType,
+} from "../messages/from-client.js";
 
 const TEST_GAME_SERVER_NAME = "Lindblum Test Server" as GameServerName;
 
@@ -28,6 +31,37 @@ describe("lobby server", () => {
   });
 
   it("reconnection flow", async () => {
+    expect(lobbyServer.gameLifecycleController.noCurrentGames()).toBe(true);
+    const lobbyClient = new WebSocket("ws://localhost:8082");
+
+    lobbyClient.on("message", (rawData) => {
+      const asString = rawData.toString();
+      const asJson = JSON.parse(asString);
+      const typedMessage = asJson as MessageFromServer;
+
+      console.log("lobby client got message:", typedMessage);
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      lobbyClient.on("open", () => resolve());
+      lobbyClient.on("error", (err) => reject(err));
+    });
+
+    const gameCreatedUpdate = new Promise<void>((resolve) => {
+      lobbyClient.once("message", (rawData) => {
+        resolve();
+      });
+    });
+
+    lobbyClient.send(
+      JSON.stringify({ type: MessageFromClientType.CreateGame, gameName: "" })
+    );
+
+    await gameCreatedUpdate;
+    expect(lobbyServer.gameLifecycleController.noCurrentGames()).toBe(false);
+  });
+
+  it("reconnection flow 2", async () => {
     const lobbyClient = new WebSocket("ws://localhost:8082");
 
     lobbyClient.on("message", (rawData) => {

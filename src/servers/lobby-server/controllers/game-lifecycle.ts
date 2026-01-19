@@ -28,6 +28,10 @@ export class LobbyGameLifecycleController {
     private readonly gameHandoffManager: GameHandoffManager
   ) {}
 
+  noCurrentGames() {
+    return this.gameRegistry.games.size === 0;
+  }
+
   private generateRandomGameName(): GameName {
     const firstName = ArrayUtils.chooseRandom(RANDOM_GAME_NAMES_FIRST);
     const lastName = ArrayUtils.chooseRandom(RANDOM_GAME_NAMES_LAST);
