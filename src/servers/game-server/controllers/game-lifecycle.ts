@@ -4,10 +4,6 @@ import {
   MessageFromServer,
   MessageFromServerType,
 } from "../../../messages/from-server.js";
-import {
-  HeartbeatScheduler,
-  HeartbeatTask,
-} from "../../../utils/heartbeat-scheduler.js";
 import { GameRegistry } from "../../game-registry/index.js";
 import { MessageDispatchFactory } from "../../message-delivery/message-dispatch-factory.js";
 import { MessageDispatchOutbox } from "../../message-delivery/outbox.js";
@@ -15,13 +11,11 @@ import { ActiveGameStatus } from "../../services/game-session-store/active-game-
 import { GameSessionStoreService } from "../../services/game-session-store/index.js";
 import { UserSessionRegistry } from "../../sessions/user-session-registry.js";
 import { UserSession } from "../../sessions/user-session.js";
-import { GAME_RECORD_HEARTBEAT_MS } from "../index.js";
 
 export class GameServerGameLifecycleController {
   constructor(
     private readonly gameRegistry: GameRegistry,
     private readonly userSessionRegistry: UserSessionRegistry,
-    private readonly heartbeatScheduler: HeartbeatScheduler,
     private readonly gameSessionStoreService: GameSessionStoreService,
     private readonly updateDispatchFactory: MessageDispatchFactory<MessageFromServer>
   ) {}
@@ -51,16 +45,6 @@ export class GameServerGameLifecycleController {
       newGame.name,
       new ActiveGameStatus(newGame.name, newGame.id)
     );
-
-    const heartbeat = new HeartbeatTask(GAME_RECORD_HEARTBEAT_MS, () => {
-      // currently overwrites but could just update - this is simpler for now
-      this.gameSessionStoreService.writeActiveGameStatus(
-        newGame.name,
-        new ActiveGameStatus(newGame.name, newGame.id)
-      );
-    });
-
-    this.heartbeatScheduler.register(heartbeat);
 
     return newGame;
   }

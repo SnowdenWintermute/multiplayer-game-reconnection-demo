@@ -9,18 +9,18 @@ export class HeartbeatTask {
   ) {}
 }
 
-export class HeartbeatScheduler {
+export class HeartbeatScheduler<K> {
   private interval: NodeJS.Timeout | null = null;
-  private readonly tasks = new Set<HeartbeatTask>();
+  private readonly tasks = new Map<K, HeartbeatTask>();
 
   constructor(private readonly tickMs: Milliseconds) {}
 
-  register(task: HeartbeatTask): void {
-    this.tasks.add(task);
+  register(key: K, task: HeartbeatTask): void {
+    this.tasks.set(key, task);
   }
 
-  unregister(task: HeartbeatTask): void {
-    this.tasks.delete(task);
+  unregister(key: K): void {
+    this.tasks.delete(key);
   }
 
   start(): void {
@@ -36,7 +36,7 @@ export class HeartbeatScheduler {
   private async tick(): Promise<void> {
     const now = Date.now() as Milliseconds;
 
-    for (const task of this.tasks) {
+    for (const [_key, task] of this.tasks) {
       if (now - task.lastRunMs >= task.intervalMs) {
         task.lastRunMs = now;
         try {

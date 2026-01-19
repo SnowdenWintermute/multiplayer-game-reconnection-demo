@@ -1,6 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { GameServerName, Milliseconds } from "../../aliases.js";
-import { IdGenerator } from "../../utils/id-generator.js";
 import { BaseServer } from "../base-server.js";
 import { GameRegistry } from "../game-registry/index.js";
 import { GameSessionStoreService } from "../services/game-session-store/index.js";
@@ -9,26 +8,32 @@ import { UserSession } from "../sessions/user-session.js";
 import { GameServerSessionClaimTokenCodec } from "../lobby-server/game-handoff/game-server-session-claim-token.js";
 import { ConnectionIdentityResolutionContext } from "../services/identity-provider/index.js";
 import { createGameServerMessageFromClientHandlers } from "./create-message-handlers.js";
-import { HeartbeatScheduler } from "../../utils/heartbeat-scheduler.js";
+import {
+  HeartbeatScheduler,
+  HeartbeatTask,
+} from "../../utils/heartbeat-scheduler.js";
 import { GameServerGameLifecycleController } from "./controllers/game-lifecycle.js";
 import { GameServerSessionLifecycleController } from "./controllers/session-lifecycle.js";
+import { ActiveGameStatus } from "../services/game-session-store/active-game-status.js";
+import { ReconnectionOpportunityManager } from "./reconnection/reconnection-opportunity-manager.js";
+import { GameServerReconnectionProtocol } from "./reconnection/reconnection-protocol.js";
 
 export interface GameServerExternalServices {
   gameSessionStoreService: GameSessionStoreService;
   pendingReconnectionStoreService: PendingReconnectionStoreService;
 }
 
-export const GAME_RECORD_HEARTBEAT_MS = (1000 * 10) as Milliseconds;
+const GAME_RECORD_HEARTBEAT_MS = (1000 * 10) as Milliseconds;
 
 export class GameServer extends BaseServer {
   private readonly gameRegistry = new GameRegistry();
-  private readonly idGenerator = new IdGenerator();
   private readonly heartbeatScheduler = new HeartbeatScheduler(
     GAME_RECORD_HEARTBEAT_MS
   );
-  // private readonly reconnectionOpportunityManager =
-  //   new ReconnectionOpportunityManager();
-  // private readonly reconnectionProtocol: GameServerReconnectionProtocol;
+
+  private readonly reconnectionOpportunityManager =
+    new ReconnectionOpportunityManager();
+  private readonly reconnectionProtocol: GameServerReconnectionProtocol;
 
   // controllers
   public readonly gameLifecycleController: GameServerGameLifecycleController;
@@ -49,12 +54,11 @@ export class GameServer extends BaseServer {
       this.connectionHandler(socket, identityResolutionContext);
     });
 
-    this.heartbeatScheduler.start();
+    this.startActiveGamesRecordHeartbeat();
 
     this.gameLifecycleController = new GameServerGameLifecycleController(
       this.gameRegistry,
       this.userSessionRegistry,
-      this.heartbeatScheduler,
       gameSessionStoreService,
       this.updateDispatchFactory
     );
@@ -66,16 +70,31 @@ export class GameServer extends BaseServer {
       this.gameServerSessionClaimTokenCodec
     );
 
-    // this.reconnectionProtocol = new GameServerReconnectionProtocol(
-    //   this.updateDispatchFactory,
-    //   externalServices.disconnectedSessionStoreService,
-    //   this.reconnectionOpportunityManager,
-    //   this.gameLifecycleController,
-    //   (outbox) => this.dispatchOutboxMessages(outbox)
-    // );
+    this.reconnectionProtocol = new GameServerReconnectionProtocol(
+      this.updateDispatchFactory,
+      this.pendingReconnectionStoreService,
+      this.reconnectionOpportunityManager,
+      this.gameLifecycleController,
+      (outbox) => this.dispatchOutboxMessages(outbox)
+    );
   }
 
   private messageHandlers = createGameServerMessageFromClientHandlers(this);
+
+  private startActiveGamesRecordHeartbeat() {
+    this.heartbeatScheduler.start();
+
+    const heartbeat = new HeartbeatTask(GAME_RECORD_HEARTBEAT_MS, () => {
+      for (const [gameName, game] of this.gameRegistry.games)
+        // currently overwrites but could just update - this is simpler for now
+        this.gameSessionStoreService.writeActiveGameStatus(
+          gameName,
+          new ActiveGameStatus(gameName, game.id)
+        );
+    });
+
+    this.heartbeatScheduler.register("active games heartbeat", heartbeat);
+  }
 
   async connectionHandler(
     socket: WebSocket,
