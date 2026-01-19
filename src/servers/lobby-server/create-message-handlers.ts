@@ -26,7 +26,7 @@ export function createLobbyMessageFromClientHandlers(
   return {
     //  GAME SETUP
     [MessageFromClientType.CreateGame]: (data, user) =>
-      lobbyServer.gameLifecycleController.createGameHandler(data, user),
+      lobbyServer.gameLifecycleController.createGameHandler(user),
     [MessageFromClientType.JoinGame]: (data, user) =>
       lobbyServer.gameLifecycleController.joinGameHandler(data.gameName, user),
     [MessageFromClientType.LeaveGame]: (_data, user) =>

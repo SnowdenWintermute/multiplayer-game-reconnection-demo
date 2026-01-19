@@ -9,7 +9,7 @@ export abstract class ConnectionSessionRegistry<T extends ConnectionSession> {
   abstract onUnregister?(session: T): void;
 
   issueConnectionId() {
-    return uuidv4();
+    return uuidv4() as ConnectionId;
   }
 
   register(session: T) {

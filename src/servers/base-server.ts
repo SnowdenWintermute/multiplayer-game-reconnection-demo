@@ -1,4 +1,9 @@
+import { IncomingMessage } from "node:http";
+import { MessageFromClient } from "../messages/from-client.js";
 import { MessageFromServer } from "../messages/from-server.js";
+import { invariant } from "../utils/index.js";
+import { GameServerMessageFromClientHandlers } from "./game-server/create-message-handlers.js";
+import { LobbyMessageFromClientHandlers } from "./lobby-server/create-message-handlers.js";
 import { MessageDispatchFactory } from "./message-delivery/message-dispatch-factory.js";
 import { MessageDispatchType } from "./message-delivery/message-dispatch.js";
 import { MessageDispatchOutbox } from "./message-delivery/outbox.js";
@@ -6,6 +11,11 @@ import { OutgoingMessageGateway } from "./message-delivery/outgoing-message-gate
 import { UserSessionRegistry } from "./sessions/user-session-registry.js";
 import { UserSession } from "./sessions/user-session.js";
 import { WebSocket } from "ws";
+import { ConnectionIdentityResolutionContext } from "./services/identity-provider/index.js";
+import {
+  GuestSessionReconnectionToken,
+  IdentityProviderId,
+} from "../aliases.js";
 
 export abstract class BaseServer {
   readonly userSessionRegistry = new UserSessionRegistry();
@@ -16,32 +26,73 @@ export abstract class BaseServer {
 
   constructor(readonly name: string) {}
 
+  protected async parseIdentityContextFromHandshakeRequest(
+    request: IncomingMessage
+  ): Promise<ConnectionIdentityResolutionContext> {
+    const url = new URL(request.url!, `http://${request.headers.host}`);
+    const reconnectionToken = url.searchParams.get(
+      "clientCachedGuestReconnectionToken"
+    );
+    const sessionClaimToken = url.searchParams.get("sessionClaimToken");
+
+    // @SECURITY - validate the query params
+
+    const cookies = Object.fromEntries(
+      request.headers.cookie?.split("; ").map((c) => c.split("=")) ?? []
+    );
+
+    const authUserIdToken = cookies["authUserIdToken"];
+    let authUserId: IdentityProviderId | undefined = undefined;
+    if (authUserIdToken !== undefined) {
+      authUserId = await this.getUserIdFromInternalService(authUserIdToken);
+    }
+
+    return {
+      clientCachedGuestReconnectionToken:
+        (reconnectionToken as GuestSessionReconnectionToken) || undefined,
+      encodedGameServerSessionClaimToken: sessionClaimToken || undefined,
+      authUserId,
+    };
+  }
+
+  private async getUserIdFromInternalService(authToken: string) {
+    // make an internal call to your identity provider and get
+    // the user id from the token if it is valid and an auth session
+    // exists that corresponds to the token's information
+    return undefined;
+  }
+
   protected attachIntentHandlersToSessionConnection(
     session: UserSession,
     userConnectionEndpoint: WebSocket,
     intentHandlers:
-      | Partial<GameServerClientIntentHandlers>
-      | Partial<LobbyClientIntentHandlers>
+      | Partial<GameServerMessageFromClientHandlers>
+      | Partial<LobbyMessageFromClientHandlers>
   ) {
     // attach the connection to message handlers and disconnectionHandler
     userConnectionEndpoint.on("message", async (data) => {
       try {
         const text = data.toString();
-        const expectedTypedPacket = JSON.parse(text);
+        const expectedTypedPacket = JSON.parse(text) as MessageFromClient;
+
+        // @SECURITY - validate message shape
 
         const handlerOption = intentHandlers[expectedTypedPacket.type];
 
-        if (handlerOption === undefined) {
-          throw new Error(
-            "Lobby is not configured to handle this type of ClientIntent"
-          );
-        }
+        invariant(
+          handlerOption !== undefined,
+          "Server is not configured to handle this type of message"
+        );
 
         const registeredSession = this.userSessionRegistry.requireSession(
           session.connectionId
         );
 
-        // a workaround is to use "as never" for some reason
+        // TS asks: what argument would be valid for *any* possible handler?
+        // Because this is a union of handlers, the parameter type becomes the
+        // intersection of all payload types, which collapses to `never`.
+        // Since we look up handler in a typed record and check it is not undefined
+        // we can say the data is the correct type for the handler
         const outbox = await handlerOption(
           expectedTypedPacket.data as never,
           registeredSession
