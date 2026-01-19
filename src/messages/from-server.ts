@@ -1,5 +1,6 @@
 import { GuestSessionReconnectionToken, Username } from "../aliases.js";
 import { MyGameClass } from "../game/index.js";
+import { GameServerConnectionInstructions } from "../servers/lobby-server/game-handoff/game-server-connection-instructions.js";
 
 export enum MessageFromServerType {
   ClientUsername,
@@ -42,6 +43,9 @@ export interface MessageFromServerMap {
   };
   [MessageFromServerType.PlayerToggledReadyToStartGame]: {
     username: Username;
+  };
+  [MessageFromServerType.GameServerConnectionInstructions]: {
+    connectionInstructions: GameServerConnectionInstructions;
   };
 }
 

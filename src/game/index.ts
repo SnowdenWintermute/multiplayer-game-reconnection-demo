@@ -1,4 +1,9 @@
-import { GameId, GameName, MessageDispatchChannelName } from "../aliases.js";
+import {
+  GameId,
+  GameName,
+  MessageDispatchChannelName,
+  Username,
+} from "../aliases.js";
 import { ERROR_MESSAGES } from "../error-messages.js";
 import { UserId } from "../servers/services/identity-provider/tagged-user-id.js";
 import { ReferenceCountedLock } from "../utils/reference-counted-lock.js";
@@ -12,6 +17,7 @@ export class MyGameClass {
   private _timeHandedOff: number | null = null;
   private _timeStarted: number | null = null;
   private inputLock = new ReferenceCountedLock<UserId>();
+  private playersReadied = new Set<Username>();
 
   constructor(
     public readonly id: GameId,
@@ -32,6 +38,7 @@ export class MyGameClass {
     deserialized._playerRegistry = PlayerRegistry.getDeserialized(
       game.playerRegistry
     );
+    deserialized.playersReadied = new Set();
     deserialized.inputLock = new ReferenceCountedLock<UserId>();
 
     return deserialized;
@@ -75,5 +82,28 @@ export class MyGameClass {
       throw new Error(ERROR_MESSAGES.GAME.ALREADY_STARTED);
     }
     this._timeStarted = Date.now();
+  }
+
+  /** returns if all players are now ready to start game */
+  togglePlayerReadyToStartGameStatus(username: Username) {
+    if (this.playersReadied.has(username)) {
+      this.playersReadied.delete(username);
+    } else {
+      this.playersReadied.add(username);
+    }
+
+    if (this.allPlayersAreReadyToStart()) {
+      return true;
+    }
+    return false;
+  }
+
+  private allPlayersAreReadyToStart() {
+    for (const [username, _player] of this.playerRegistry.players) {
+      if (!this.playersReadied.has(username)) {
+        return false;
+      }
+      return true;
+    }
   }
 }

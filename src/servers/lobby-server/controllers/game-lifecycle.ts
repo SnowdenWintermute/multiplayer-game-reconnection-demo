@@ -15,15 +15,14 @@ import { GameRegistry } from "../../game-registry/index.js";
 import { MessageDispatchFactory } from "../../message-delivery/message-dispatch-factory.js";
 import { MessageDispatchOutbox } from "../../message-delivery/outbox.js";
 import { GameSessionStoreService } from "../../services/game-session-store/index.js";
-import { UserSessionRegistry } from "../../sessions/user-session-registry.js";
 import { UserSession } from "../../sessions/user-session.js";
+import { GameHandoffManager } from "../game-handoff/game-handoff-manager.js";
 
 export class LobbyGameLifecycleController {
   private readonly idGenerator = new IdGenerator<GameId>();
 
   constructor(
     private readonly gameRegistry: GameRegistry,
-    private readonly userSessionRegistry: UserSessionRegistry,
     private readonly updateDispatchFactory: MessageDispatchFactory<MessageFromServer>,
     private readonly gameSessionStoreService: GameSessionStoreService,
     private readonly gameHandoffManager: GameHandoffManager
@@ -52,9 +51,8 @@ export class LobbyGameLifecycleController {
       }
     }
 
-    const gameByThisNameExists =
-      this.gameRegistry.getGameOption(gameName) !== undefined;
-    if (gameByThisNameExists) {
+    const nameIsTaken = this.gameRegistry.getGameOption(gameName) !== undefined;
+    if (nameIsTaken) {
       throw new Error(ERROR_MESSAGES.GAME.ALREADY_EXISTS);
     }
 

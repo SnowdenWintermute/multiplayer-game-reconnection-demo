@@ -1,6 +1,7 @@
 import { GameName } from "../../aliases.js";
 import { ERROR_MESSAGES } from "../../error-messages.js";
 import { MyGameClass } from "../../game/index.js";
+import { ArrayUtils } from "../../utils/array.js";
 
 export class GameRegistry {
   private games = new Map<GameName, MyGameClass>();
