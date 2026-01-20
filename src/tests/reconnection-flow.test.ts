@@ -3,18 +3,24 @@ import { LobbyServer } from "../servers/lobby-server/index.js";
 import { IdentityProviderService } from "../servers/services/identity-provider/index.js";
 import { PendingReconnectionStoreService } from "../servers/services/pending-reconnection-store/index.js";
 import { GameSessionStoreService } from "../servers/services/game-session-store/index.js";
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer } from "ws";
 import { GameServerSessionClaimTokenCodec } from "../servers/lobby-server/game-handoff/game-server-session-claim-token.js";
 import { EncryptionHelpers } from "../cryptography/index.js";
 import { GameServer } from "../servers/game-server/index.js";
-import { GameServerName } from "../aliases.js";
-import { MessageFromServer } from "../messages/from-server.js";
-import {
-  MessageFromClient,
-  MessageFromClientType,
-} from "../messages/from-client.js";
+import { GameName, GameServerName } from "../aliases.js";
+import { MessageFromServerType } from "../messages/from-server.js";
+import { MessageFromClientType } from "../messages/from-client.js";
+import { TestClient } from "./test-client.js";
+import { invariant } from "../utils/index.js";
+import { MyGameClass } from "../game/index.js";
 
 const TEST_GAME_SERVER_NAME = "Lindblum Test Server" as GameServerName;
+const TEST_LOBBY_PORT = 8082;
+const TEST_GAME_SERVER_PORT = 8083;
+
+function localServerUrl(port: number) {
+  return `ws://localhost:${port}`;
+}
 
 describe("lobby server", () => {
   let gameServer: GameServer;
@@ -32,55 +38,50 @@ describe("lobby server", () => {
 
   it("reconnection flow", async () => {
     expect(lobbyServer.gameLifecycleController.noCurrentGames()).toBe(true);
-    const lobbyClient = new WebSocket("ws://localhost:8082");
+    const gameHostClient = new TestClient("game host");
+    await gameHostClient.connect(localServerUrl(TEST_LOBBY_PORT));
 
-    lobbyClient.on("message", (rawData) => {
-      const asString = rawData.toString();
-      const asJson = JSON.parse(asString);
-      const typedMessage = asJson as MessageFromServer;
+    const gameHostFullUpdate =
+      await gameHostClient.sendMessageAndAwaitReplyType(
+        {
+          type: MessageFromClientType.CreateGame,
+          data: { gameName: "" as GameName },
+        },
+        MessageFromServerType.GameFullUpdate
+      );
 
-      console.log("lobby client got message:", typedMessage);
-    });
+    const gameUpdate = gameHostFullUpdate.data;
+    expect(gameUpdate.game).toBeDefined();
+    invariant(gameUpdate.game !== null);
 
-    await new Promise<void>((resolve, reject) => {
-      lobbyClient.on("open", () => resolve());
-      lobbyClient.on("error", (err) => reject(err));
-    });
-
-    const gameCreatedUpdate = new Promise<void>((resolve) => {
-      lobbyClient.once("message", (rawData) => {
-        resolve();
-      });
-    });
-
-    lobbyClient.send(
-      JSON.stringify({ type: MessageFromClientType.CreateGame, gameName: "" })
-    );
-
-    await gameCreatedUpdate;
     expect(lobbyServer.gameLifecycleController.noCurrentGames()).toBe(false);
-  });
 
-  it("reconnection flow 2", async () => {
-    const lobbyClient = new WebSocket("ws://localhost:8082");
+    const gameJoinerClient = new TestClient("game joiner");
+    await gameJoinerClient.connect(localServerUrl(TEST_LOBBY_PORT));
 
-    lobbyClient.on("message", (rawData) => {
-      const asString = rawData.toString();
-      const asJson = JSON.parse(asString);
-      const typedMessage = asJson as MessageFromServer;
+    const gameJoinerFullUpdate =
+      await gameJoinerClient.sendMessageAndAwaitReplyType(
+        {
+          type: MessageFromClientType.JoinGame,
+          data: { gameName: gameUpdate.game.name },
+        },
+        MessageFromServerType.GameFullUpdate
+      );
 
-      console.log("lobby client got message:", typedMessage);
-    });
+    const joinerGame = gameJoinerFullUpdate.data.game;
+    expect(joinerGame).toBeDefined();
+    invariant(joinerGame !== null);
 
-    await new Promise<void>((resolve, reject) => {
-      lobbyClient.on("open", () => resolve());
-      lobbyClient.on("error", (err) => reject(err));
-    });
+    const deserializedJoinerGame = MyGameClass.getDeserialized(joinerGame);
+    expect(deserializedJoinerGame.playerRegistry.players.size).toBe(2);
 
-    lobbyClient.send(
-      JSON.stringify({ type: MessageFromClientType.CreateGame, gameName: "" })
-    );
-    //
+    const hostReadiedMessage =
+      await gameHostClient.sendMessageAndAwaitReplyType(
+        { type: MessageFromClientType.ToggleReadyToStartGame, data: undefined },
+        MessageFromServerType.PlayerToggledReadyToStartGame
+      );
+
+    expect(hostReadiedMessage.data.username).toBe(gameHostClient.username);
   });
 });
 
@@ -93,7 +94,7 @@ async function setUpTestServers() {
     testSecret
   );
 
-  const lobbyWebsocketServer = new WebSocketServer({ port: 8082 });
+  const lobbyWebsocketServer = new WebSocketServer({ port: TEST_LOBBY_PORT });
   const lobbyServer = new LobbyServer(
     identityProviderService,
     pendingReconnectionStoreService,
@@ -102,7 +103,9 @@ async function setUpTestServers() {
     gameServerSessionClaimTokenCodec
   );
 
-  const gameServerWebsocketServer = new WebSocketServer({ port: 8083 });
+  const gameServerWebsocketServer = new WebSocketServer({
+    port: TEST_GAME_SERVER_PORT,
+  });
   const gameServer = new GameServer(
     TEST_GAME_SERVER_NAME,
     pendingReconnectionStoreService,

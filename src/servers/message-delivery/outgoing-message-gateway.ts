@@ -24,7 +24,9 @@ export class OutgoingMessageGateway<Sendable extends Object> {
       );
     }
 
-    endpoint.send(this.encode(message));
+    const encoded = this.encode(message);
+
+    endpoint.send(encoded);
   }
 
   submitToConnections(connectionIds: ConnectionId[], message: Sendable): void {

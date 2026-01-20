@@ -151,12 +151,14 @@ export class LobbyGameLifecycleController {
     const outbox = new MessageDispatchOutbox<MessageFromServer>(
       this.updateDispatchFactory
     );
+
     outbox.pushToChannel(game.getChannelName(), {
       type: MessageFromServerType.PlayerToggledReadyToStartGame,
       data: { username: session.username },
     });
 
     const notAllPlayersAreReady = !allPlayersReadied;
+
     if (notAllPlayersAreReady) {
       return outbox;
     }

@@ -11,7 +11,8 @@ export class PlayerRegistry {
   static getDeserialized(raw: PlayerRegistry) {
     const deserialized = plainToInstance(PlayerRegistry, raw);
     deserialized._players = new Map<Username, MyGamePlayerClass>();
-    for (const [username, player] of raw._players) {
+    // must object.entries since map serializes to plain object
+    for (const [username, player] of Object.entries(raw._players)) {
       deserialized.addPlayer(player);
     }
 
@@ -31,15 +32,15 @@ export class PlayerRegistry {
   }
 
   addPlayer(player: MyGamePlayerClass) {
-    this.players.set(player.username, player);
+    this._players.set(player.username, player);
   }
 
   removePlayer(username: Username) {
-    this.players.delete(username);
+    this._players.delete(username);
   }
 
   requirePlayer(username: Username) {
-    const result = this.players.get(username);
+    const result = this._players.get(username);
     if (result === undefined) {
       throw new Error(ERROR_MESSAGES.PLAYER.DOES_NOT_EXIST);
     }

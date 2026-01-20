@@ -37,7 +37,7 @@ export class MyGameClass {
   static getDeserialized(game: MyGameClass) {
     const deserialized = plainToInstance(MyGameClass, game);
     deserialized._playerRegistry = PlayerRegistry.getDeserialized(
-      game.playerRegistry
+      game._playerRegistry
     );
     deserialized.playersReadied = new Set();
     deserialized.inputLock = new ReferenceCountedLock<UserId>();
@@ -101,10 +101,11 @@ export class MyGameClass {
 
   private allPlayersAreReadyToStart() {
     for (const [username, _player] of this.playerRegistry.players) {
-      if (!this.playersReadied.has(username)) {
+      const userIsReady = this.playersReadied.has(username);
+      if (!userIsReady) {
         return false;
       }
-      return true;
     }
+    return true;
   }
 }

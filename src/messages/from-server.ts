@@ -22,7 +22,7 @@ export enum MessageFromServerType {
 
 export interface MessageFromServerMap {
   [MessageFromServerType.ClientUsername]: {
-    username: string;
+    username: Username;
   };
   [MessageFromServerType.CacheGuestSessionReconnectionToken]: {
     token: GuestSessionReconnectionToken;
