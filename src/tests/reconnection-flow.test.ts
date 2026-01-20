@@ -83,6 +83,8 @@ describe("lobby server", () => {
         { type: MessageFromClientType.ToggleReadyToStartGame, data: undefined },
         MessageFromServerType.GameServerConnectionInstructions
       );
+    const joinerConnectionInstructions =
+      joinerReadiedMessage.data.connectionInstructions;
 
     const hostConnectionInstructions = await hostConnectionInstructionsMessage;
 
@@ -112,8 +114,8 @@ describe("lobby server", () => {
     );
     await hostClient.connect();
 
-    const message = await clientGetsGameOnGameServerJoin;
-    expect(message.data.game).toBeDefined();
+    const hostGameDataOnJoin = await clientGetsGameOnGameServerJoin;
+    expect(hostGameDataOnJoin.data.game).toBeDefined();
 
     // don't allow reconnecting with same token
     hostClient.initializeSocket(
@@ -121,5 +123,22 @@ describe("lobby server", () => {
       [hostClientQueryParams]
     );
     await expect(hostClient.connect()).rejects.toThrow();
+
+    // joiner joins
+
+    const joinerClientQueryParams = {
+      name: QUERY_PARAMS.SESSION_CLAIM_TOKEN,
+      value: joinerConnectionInstructions.encryptedSessionClaimToken,
+    };
+
+    joinerClient.initializeSocket(joinerConnectionInstructions.url, [
+      joinerClientQueryParams,
+    ]);
+    const joinerClientGetsGameOnGameServerJoin =
+      joinerClient.awaitMessageFromServer(MessageFromServerType.GameFullUpdate);
+    await joinerClient.connect();
+
+    const joinerGameDataOnJoin = await joinerClientGetsGameOnGameServerJoin;
+    expect(joinerGameDataOnJoin.data.game).toBeDefined();
   });
 });
