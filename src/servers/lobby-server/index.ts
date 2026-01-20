@@ -35,14 +35,16 @@ export class LobbyServer extends BaseServer {
     private readonly pendingReconnectionStoreService: PendingReconnectionStoreService,
     private readonly gameSessionStoreService: GameSessionStoreService,
     public readonly websocketServer: WebSocketServer,
-    private readonly gameServerSessionClaimTokenCodec: GameServerSessionClaimTokenCodec
+    private readonly gameServerSessionClaimTokenCodec: GameServerSessionClaimTokenCodec,
+    fetchLeastBusyServer: () => Promise<string>
   ) {
     super("Lobby");
     this.gameHandoffManager = new GameHandoffManager(
       this.userSessionRegistry,
       this.updateDispatchFactory,
       gameSessionStoreService,
-      this.gameServerSessionClaimTokenCodec
+      this.gameServerSessionClaimTokenCodec,
+      fetchLeastBusyServer
     );
 
     this.reconnectionProtocol = new LobbyReconnectionProtocol(

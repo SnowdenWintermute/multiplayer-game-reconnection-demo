@@ -12,6 +12,14 @@ const TEST_GAME_SERVER_NAME = "Lindblum Test Server" as GameServerName;
 export const TEST_LOBBY_PORT = 8082;
 export const TEST_GAME_SERVER_PORT = 8083;
 
+export function localServerUrl(port: number) {
+  return `ws://localhost:${port}`;
+}
+
+async function testLeastBusyServerUrlGetter() {
+  return localServerUrl(TEST_GAME_SERVER_PORT);
+}
+
 export async function setUpTestServers() {
   const identityProviderService = new IdentityProviderService();
   const pendingReconnectionStoreService = new PendingReconnectionStoreService();
@@ -27,7 +35,8 @@ export async function setUpTestServers() {
     pendingReconnectionStoreService,
     gameSessionStoreService,
     lobbyWebsocketServer,
-    gameServerSessionClaimTokenCodec
+    gameServerSessionClaimTokenCodec,
+    testLeastBusyServerUrlGetter
   );
 
   const gameServerWebsocketServer = new WebSocketServer({

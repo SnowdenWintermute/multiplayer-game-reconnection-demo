@@ -19,6 +19,11 @@ import { ReconnectionOpportunityManager } from "./reconnection/reconnection-oppo
 import { GameServerReconnectionProtocol } from "./reconnection/reconnection-protocol.js";
 import { invariant } from "../../utils/index.js";
 import { ConnectionContextType } from "../reconnection-protocol.js";
+import { MessageDispatchOutbox } from "../message-delivery/outbox.js";
+import {
+  MessageFromServer,
+  MessageFromServerType,
+} from "../../messages/from-server.js";
 
 export interface GameServerExternalServices {
   gameSessionStoreService: GameSessionStoreService;
@@ -108,55 +113,61 @@ export class GameServer extends BaseServer {
     identityResolutionContext: ConnectionIdentityResolutionContext
   ) {
     const connectionId = this.userSessionRegistry.issueConnectionId();
-    const session = await this.sessionLifecycleController.createSession(
-      connectionId,
-      identityResolutionContext
-    );
 
-    const { username, taggedUserId } = session;
-
-    const connectionLogMessage = `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) joined the [${this.name}] game server`;
-    console.info(connectionLogMessage);
-
-    this.outgoingMessagesGateway.registerEndpoint(connectionId, socket);
-
-    const gameName = session.currentGameName;
-    invariant(
-      gameName !== null,
-      "game name should have been set from their token in createSession"
-    );
-
-    const existingGame =
-      await this.gameLifecycleController.getOrInitializeGame(gameName);
-
-    this.attachIntentHandlersToSessionConnection(
-      session,
-      socket,
-      this.messageHandlers
-    );
-
-    const gameIsInProgress = existingGame.timeStarted !== null;
-    const connectionContext =
-      await this.reconnectionProtocol.evaluateConnectionContext(
-        session,
-        gameIsInProgress
+    try {
+      const session = await this.sessionLifecycleController.createSession(
+        connectionId,
+        identityResolutionContext
       );
 
-    if (connectionContext.type === ConnectionContextType.Reconnection) {
-      await connectionContext.attemptReconnectionClaim();
-    }
+      const { username, taggedUserId } = session;
 
-    const outbox =
-      await this.sessionLifecycleController.activateSession(session);
-    const joinGameOutbox = await this.gameLifecycleController.joinGameHandler(
-      gameName,
-      session
-    );
-    outbox.pushFromOther(joinGameOutbox);
-    const refreshedReconnectionTokenOutbox =
-      await this.reconnectionProtocol.issueReconnectionCredential(session);
-    outbox.pushFromOther(refreshedReconnectionTokenOutbox);
-    this.dispatchOutboxMessages(outbox);
+      const connectionLogMessage = `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) joined the [${this.name}] game server`;
+      console.info(connectionLogMessage);
+
+      this.outgoingMessagesGateway.registerEndpoint(connectionId, socket);
+
+      const gameName = session.currentGameName;
+      invariant(
+        gameName !== null,
+        "game name should have been set from their token in createSession"
+      );
+
+      const existingGame =
+        await this.gameLifecycleController.getOrInitializeGame(gameName);
+
+      this.attachIntentHandlersToSessionConnection(
+        session,
+        socket,
+        this.messageHandlers
+      );
+
+      const gameIsInProgress = existingGame.timeStarted !== null;
+      const connectionContext =
+        await this.reconnectionProtocol.evaluateConnectionContext(
+          session,
+          gameIsInProgress
+        );
+
+      if (connectionContext.type === ConnectionContextType.Reconnection) {
+        await connectionContext.attemptReconnectionClaim();
+      }
+
+      const outbox =
+        await this.sessionLifecycleController.activateSession(session);
+      const joinGameOutbox = await this.gameLifecycleController.joinGameHandler(
+        gameName,
+        session
+      );
+      outbox.pushFromOther(joinGameOutbox);
+      const refreshedReconnectionTokenOutbox =
+        await this.reconnectionProtocol.issueReconnectionCredential(session);
+      outbox.pushFromOther(refreshedReconnectionTokenOutbox);
+      this.dispatchOutboxMessages(outbox);
+    } catch (error) {
+      socket.close(1008, JSON.stringify(error));
+      return;
+    }
   }
 
   protected async disconnectionHandler(session: UserSession, code: number) {

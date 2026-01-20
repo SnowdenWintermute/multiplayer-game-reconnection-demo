@@ -16,21 +16,64 @@ export class TestClient {
   private _username: Username | null = null;
   constructor(public name: string) {}
 
-  async connect(url: string) {
-    const socket = new WebSocket(url);
-    this._socket = socket;
+  initializeSocket(
+    url: string,
+    queryParams: { name: string; value: string }[] = []
+  ) {
+    let urlWithParams = url;
+    queryParams.forEach(({ name, value }, i) => {
+      const isFirstParam = i === 0;
+      if (isFirstParam) {
+        urlWithParams += "?";
+      } else {
+        urlWithParams += "&";
+      }
 
+      urlWithParams += `${name}=${encodeURIComponent(value)}`;
+    });
+
+    const socket = new WebSocket(urlWithParams);
+    this._socket = socket;
+  }
+
+  async connect() {
     const usernameAssignment = this.awaitMessageFromServer(
       MessageFromServerType.ClientUsername
     );
 
     await new Promise<void>((resolve, reject) => {
-      socket.on("open", () => resolve());
-      socket.on("error", (err) => reject(err));
-    });
+      const onOpen = async () => {
+        try {
+          const usernameMessage = await usernameAssignment;
+          this._username = usernameMessage.data.username;
+          cleanup();
+          resolve();
+        } catch (error) {
+          cleanup();
+          reject(error);
+        }
+      };
 
-    const usernameMessage = await usernameAssignment;
-    this._username = usernameMessage.data.username;
+      const onClose = (code: number) => {
+        cleanup();
+        reject(new Error(`WebSocket closed with code ${code}`));
+      };
+
+      const onError = (err: Error) => {
+        cleanup();
+        reject(err);
+      };
+
+      const cleanup = () => {
+        this.socket.off("open", onOpen);
+        this.socket.off("close", onClose);
+        this.socket.off("error", onError);
+      };
+
+      this.socket.once("open", onOpen);
+      this.socket.once("close", onClose);
+      this.socket.once("error", onError);
+    });
   }
 
   get username() {
@@ -56,7 +99,7 @@ export class TestClient {
     return await messageFromServer;
   }
 
-  async awaitMessageFromServer<T extends MessageFromServerType>(
+  async oldAwaitMessageFromServer<T extends MessageFromServerType>(
     expectedReplyType: T
   ): Promise<MessageFromServerOfType<T>> {
     return new Promise<MessageFromServerOfType<T>>((resolve) => {
@@ -69,6 +112,35 @@ export class TestClient {
       };
 
       this.socket.on("message", handler);
+    });
+  }
+
+  async awaitMessageFromServer<T extends MessageFromServerType>(
+    expectedReplyType: T
+  ): Promise<MessageFromServerOfType<T>> {
+    const socket = this.socket;
+
+    return new Promise<MessageFromServerOfType<T>>((resolve, reject) => {
+      const onMessage = (rawData: RawData) => {
+        const typedMessage = TestClient.getTypedMessage(rawData);
+        if (typedMessage.type === expectedReplyType) {
+          cleanup();
+          resolve(typedMessage as MessageFromServerOfType<T>);
+        }
+      };
+
+      const onClose = () => {
+        cleanup();
+        reject(new Error("Socket closed before expected message"));
+      };
+
+      const cleanup = () => {
+        socket.off("message", onMessage);
+        socket.off("close", onClose);
+      };
+
+      socket.on("message", onMessage);
+      socket.once("close", onClose);
     });
   }
 

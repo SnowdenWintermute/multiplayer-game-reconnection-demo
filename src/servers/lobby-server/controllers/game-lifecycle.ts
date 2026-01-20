@@ -167,7 +167,9 @@ export class LobbyGameLifecycleController {
 
     const connectionInstructions =
       await this.gameHandoffManager.initiateGameHandoff(game);
+
     outbox.pushFromOther(connectionInstructions);
+    // game will be unregistered when users disconnect to go to it
 
     return outbox;
   }

@@ -1,6 +1,9 @@
 import { IncomingMessage } from "node:http";
 import { MessageFromClient } from "../messages/from-client.js";
-import { MessageFromServer } from "../messages/from-server.js";
+import {
+  MessageFromServer,
+  MessageFromServerType,
+} from "../messages/from-server.js";
 import { invariant } from "../utils/index.js";
 import { GameServerMessageFromClientHandlers } from "./game-server/create-message-handlers.js";
 import { LobbyMessageFromClientHandlers } from "./lobby-server/create-message-handlers.js";
@@ -13,6 +16,11 @@ import { UserSession } from "./sessions/user-session.js";
 import { WebSocket } from "ws";
 import { ConnectionIdentityResolutionContext } from "./services/identity-provider/index.js";
 import { GuestSessionReconnectionToken } from "../aliases.js";
+
+export const QUERY_PARAMS = {
+  SESSION_CLAIM_TOKEN: "session_claim_token",
+  GUEST_RECONNECTION_TOKEN: "guest_reconnection_token",
+};
 
 export abstract class BaseServer {
   readonly userSessionRegistry = new UserSessionRegistry();
@@ -28,9 +36,11 @@ export abstract class BaseServer {
   ): Promise<ConnectionIdentityResolutionContext> {
     const url = new URL(request.url!, `http://${request.headers.host}`);
     const reconnectionToken = url.searchParams.get(
-      "clientCachedGuestReconnectionToken"
+      QUERY_PARAMS.GUEST_RECONNECTION_TOKEN
     );
-    const sessionClaimToken = url.searchParams.get("sessionClaimToken");
+    const sessionClaimToken = url.searchParams.get(
+      QUERY_PARAMS.SESSION_CLAIM_TOKEN
+    );
 
     // @SECURITY - validate the query params
 
@@ -84,7 +94,15 @@ export abstract class BaseServer {
           registeredSession
         );
         this.dispatchOutboxMessages(outbox);
-      } catch (error) {}
+      } catch (error) {
+        const outbox = new MessageDispatchOutbox<MessageFromServer>(
+          this.updateDispatchFactory
+        );
+        outbox.pushToConnection(session.connectionId, {
+          type: MessageFromServerType.ErrorMessage,
+          data: { message: JSON.stringify(error) },
+        });
+      }
     });
 
     userConnectionEndpoint.on("close", (code) => {
