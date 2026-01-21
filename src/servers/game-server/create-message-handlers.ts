@@ -1,4 +1,7 @@
-import { MessageFromClientMap } from "../../messages/from-client.js";
+import {
+  MessageFromClientMap,
+  MessageFromClientType,
+} from "../../messages/from-client.js";
 import { MessageFromServer } from "../../messages/from-server.js";
 import { MessageDispatchOutbox } from "../message-delivery/outbox.js";
 import { UserSession } from "../sessions/user-session.js";
@@ -20,5 +23,8 @@ export type GameServerMessageFromClientHandlers = {
 export function createGameServerMessageFromClientHandlers(
   gameServer: GameServer
 ): Partial<GameServerMessageFromClientHandlers> {
-  return {};
+  return {
+    [MessageFromClientType.AttemptGameplayAction]: (data, user) =>
+      gameServer.gameActionsController.gameActionHandler(data.action, user),
+  };
 }

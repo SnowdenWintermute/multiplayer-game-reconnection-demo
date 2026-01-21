@@ -12,6 +12,7 @@ export const ERROR_MESSAGES = {
     ALREADY_EXISTS: "A game by that name already exists",
     ALREADY_HANDED_OFF: "The game was already handed off to the game server",
     ALREADY_STARTED: "The game was already started",
+    INPUT_LOCKED: "That game is not currently accepting player inputs",
   },
   PLAYER: {
     DOES_NOT_EXIST: "No player was found",

@@ -19,11 +19,7 @@ import { ReconnectionOpportunityManager } from "./reconnection/reconnection-oppo
 import { GameServerReconnectionProtocol } from "./reconnection/reconnection-protocol.js";
 import { invariant } from "../../utils/index.js";
 import { ConnectionContextType } from "../reconnection-protocol.js";
-import { MessageDispatchOutbox } from "../message-delivery/outbox.js";
-import {
-  MessageFromServer,
-  MessageFromServerType,
-} from "../../messages/from-server.js";
+import { GameActionsController } from "./controllers/game-actions.js";
 
 export interface GameServerExternalServices {
   gameSessionStoreService: GameSessionStoreService;
@@ -46,6 +42,7 @@ export class GameServer extends BaseServer {
   // controllers
   public readonly gameLifecycleController: GameServerGameLifecycleController;
   public readonly sessionLifecycleController: GameServerSessionLifecycleController;
+  public readonly gameActionsController: GameActionsController;
 
   constructor(
     readonly name: GameServerName,
@@ -77,6 +74,11 @@ export class GameServer extends BaseServer {
       this.gameRegistry,
       this.updateDispatchFactory,
       this.gameServerSessionClaimTokenCodec
+    );
+
+    this.gameActionsController = new GameActionsController(
+      this.gameRegistry,
+      this.updateDispatchFactory
     );
 
     this.reconnectionProtocol = new GameServerReconnectionProtocol(

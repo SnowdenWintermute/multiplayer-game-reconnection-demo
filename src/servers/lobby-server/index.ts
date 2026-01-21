@@ -21,11 +21,11 @@ import { createLobbyMessageFromClientHandlers } from "./create-message-handlers.
 export class LobbyServer extends BaseServer {
   protected readonly updateDispatchFactory =
     new MessageDispatchFactory<MessageFromServer>(this.userSessionRegistry);
-  private gameRegistry = new GameRegistry();
+  private readonly gameRegistry = new GameRegistry();
   private readonly reconnectionProtocol: LobbyReconnectionProtocol;
   private readonly gameHandoffManager: GameHandoffManager;
 
-  readonly sessionLifecycleController: LobbySessionLifecycleController;
+  private readonly sessionLifecycleController: LobbySessionLifecycleController;
   readonly gameLifecycleController: LobbyGameLifecycleController;
   private messageFromClientHandlers =
     createLobbyMessageFromClientHandlers(this);

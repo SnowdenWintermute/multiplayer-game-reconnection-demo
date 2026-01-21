@@ -5,6 +5,7 @@ export enum MessageFromClientType {
   JoinGame,
   LeaveGame,
   ToggleReadyToStartGame,
+  AttemptGameplayAction,
 }
 
 // Map enum values to payload types
@@ -15,6 +16,7 @@ export interface MessageFromClientMap {
   [MessageFromClientType.JoinGame]: { gameName: GameName };
   [MessageFromClientType.LeaveGame]: undefined;
   [MessageFromClientType.ToggleReadyToStartGame]: undefined;
+  [MessageFromClientType.AttemptGameplayAction]: { action: string }; // some arbitrary action
 }
 
 export type MessageFromClient = {

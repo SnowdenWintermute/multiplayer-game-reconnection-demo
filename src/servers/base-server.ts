@@ -98,10 +98,15 @@ export abstract class BaseServer {
         const outbox = new MessageDispatchOutbox<MessageFromServer>(
           this.updateDispatchFactory
         );
+        let message = "unknown error";
+        if (error instanceof Error) {
+          message = error.message;
+        }
         outbox.pushToConnection(session.connectionId, {
           type: MessageFromServerType.ErrorMessage,
-          data: { message: JSON.stringify(error) },
+          data: { message: JSON.stringify(message) },
         });
+        this.dispatchOutboxMessages(outbox);
       }
     });
 
