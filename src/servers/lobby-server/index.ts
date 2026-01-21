@@ -75,9 +75,9 @@ export class LobbyServer extends BaseServer {
       this.connectionHandler(socket, identityResolutionContext);
     });
 
-    console.log(
-      `${this.name} listening on port ${websocketServer.options.port}`
-    );
+    // console.info(
+    //   `${this.name} listening on port ${websocketServer.options.port}`
+    // );
   }
 
   private async connectionHandler(
@@ -91,9 +91,9 @@ export class LobbyServer extends BaseServer {
     );
 
     const { username, taggedUserId } = session;
-    console.info(
-      `-- ${this.name} connection: ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}, token: ${identityResolutionContext.clientCachedGuestReconnectionToken})`
-    );
+    // console.info(
+    //   `-- ${this.name} connection: ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}, token: ${identityResolutionContext.clientCachedGuestReconnectionToken})`
+    // );
 
     this.outgoingMessagesGateway.registerEndpoint(connectionId, socket);
 
@@ -125,9 +125,9 @@ export class LobbyServer extends BaseServer {
   }
 
   protected disconnectionHandler(session: UserSession, code: number): void {
-    console.info(
-      `-- ${session.username} (${session.connectionId})  disconnected. Code - ${code}`
-    );
+    // console.info(
+    //   `-- ${session.username} (${session.connectionId})  disconnected. Code - ${code}`
+    // );
     const outbox = this.sessionLifecycleController.cleanupSession(session);
     this.outgoingMessagesGateway.unregisterEndpoint(session.connectionId);
     this.dispatchOutboxMessages(outbox);

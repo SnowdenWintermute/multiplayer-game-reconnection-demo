@@ -55,7 +55,6 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
     const pendingReconnectionOption =
       await this.getPendingReconnectionOption(session);
     if (!pendingReconnectionOption) {
-      console.log("no pending reconnection");
       return { type: ConnectionContextType.InitialConnection };
     }
 
@@ -63,8 +62,8 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
       await this.gameSessionStoreService.getActiveGameStatus(
         pendingReconnectionOption.gameName
       );
+
     if (!gameStillExists) {
-      console.log("game no longer exists");
       return { type: ConnectionContextType.InitialConnection };
     }
 
@@ -108,9 +107,9 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
     });
 
     const { username, taggedUserId, connectionId } = session;
-    console.info(
-      `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) was given instructions to reconnect to server ${pendingReconnection.gameServerName} at url ${url}`
-    );
+    // console.info(
+    //   `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) was given instructions to reconnect to server ${pendingReconnection.gameServerName} at url ${url}`
+    // );
 
     return outbox;
   }
@@ -132,7 +131,6 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
   private async getPendingReconnectionOption(session: UserSession) {
     const keyOption = session.getReconnectionKeyOption();
     if (keyOption === null) {
-      console.log("no key provided for reconnection");
       return null;
     }
     const pendingReconnection =

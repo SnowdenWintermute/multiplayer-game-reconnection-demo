@@ -41,18 +41,11 @@ export class LobbySessionLifecycleController implements SessionLifecycleControll
     );
 
     if (context.clientCachedGuestReconnectionToken) {
-      console.log(
-        "set session cached token:",
-        context.clientCachedGuestReconnectionToken
-      );
       userSession.setGuestReconnectionToken(
         context.clientCachedGuestReconnectionToken
       );
     } else {
-      console.log(
-        "NO CACHED TOKEN:",
-        context.clientCachedGuestReconnectionToken
-      );
+      //
     }
 
     return userSession;

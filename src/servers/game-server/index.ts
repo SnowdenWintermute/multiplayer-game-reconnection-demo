@@ -125,7 +125,7 @@ export class GameServer extends BaseServer {
       const { username, taggedUserId } = session;
 
       const connectionLogMessage = `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) joined the [${this.name}] game server`;
-      console.info(connectionLogMessage);
+      // console.info(connectionLogMessage);
 
       this.outgoingMessagesGateway.registerEndpoint(connectionId, socket);
 
@@ -173,9 +173,9 @@ export class GameServer extends BaseServer {
   }
 
   protected disconnectionHandler(session: UserSession, code: number) {
-    console.info(
-      `-- ${session.username} (${session.connectionId}) disconnected from ${this.name} game server. Disconnect code - ${code}`
-    );
+    // console.info(
+    //   `-- ${session.username} (${session.connectionId}) disconnected from ${this.name} game server. Disconnect code - ${code}`
+    // );
 
     const outbox = this.reconnectionProtocol.onPlayerDisconnected(
       session,

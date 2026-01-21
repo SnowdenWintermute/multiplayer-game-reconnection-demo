@@ -92,11 +92,18 @@ export class TestClient {
 
   async sendMessageAndAwaitReplyType<T extends MessageFromServerType>(
     message: MessageFromClient,
-    expectedReplyType: T
+    expectedReplyType: T,
+    options?: { logMessage: boolean }
   ): Promise<MessageFromServerOfType<T>> {
-    const messageFromServer = this.awaitMessageFromServer(expectedReplyType);
+    const messageFromServerListener =
+      this.awaitMessageFromServer(expectedReplyType);
     this.socket.send(JSON.stringify(message));
-    return await messageFromServer;
+
+    const messageFromServer = await messageFromServerListener;
+    if (options?.logMessage) {
+      console.info(messageFromServer);
+    }
+    return messageFromServer;
   }
 
   static MESSAGE_WAIT_TIMEOUT = 400 as Milliseconds;

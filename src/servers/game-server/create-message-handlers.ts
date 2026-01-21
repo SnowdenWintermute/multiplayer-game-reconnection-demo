@@ -24,7 +24,12 @@ export function createGameServerMessageFromClientHandlers(
   gameServer: GameServer
 ): Partial<GameServerMessageFromClientHandlers> {
   return {
-    [MessageFromClientType.AttemptGameplayAction]: (data, user) =>
-      gameServer.gameActionsController.gameActionHandler(data.action, user),
+    [MessageFromClientType.AttemptGameplayAction]: (data, user) => {
+      console.log("session for game action handler:", user.username);
+      return gameServer.gameActionsController.gameActionHandler(
+        data.action,
+        user
+      );
+    },
   };
 }

@@ -107,9 +107,9 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     const game = session.getExpectedCurrentGame();
 
     const { username, taggedUserId } = session;
-    console.log(
-      `reconnection is permitted, saving a reconnection session for ${username} ${taggedUserId.id}`
-    );
+    // console.info(
+    //   `reconnection is permitted, saving a reconnection session for ${username} ${taggedUserId.id}`
+    // );
 
     const pendingReconnection = PendingReconnection.fromUserSession(
       session,
@@ -197,13 +197,17 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
       session.requireReconnectionKey()
     );
 
-    console.info(
-      `user ${session.username} reconnecting to game ${session.currentGameName}`
-    );
+    // console.info(
+    //   `user ${session.username} reconnecting to game ${session.currentGameName}`
+    // );
 
     // give them a username that matches their old one if they are a guest since guest would have
     // some randomly assigned name and we need to give them the name they had when they disconnected
     // so it will match their player in game
     session.username = reconnectionOpportunityOption.username;
+    console.log(
+      "set reconnected session username:",
+      reconnectionOpportunityOption.username
+    );
   }
 }

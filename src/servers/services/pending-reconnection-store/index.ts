@@ -64,10 +64,6 @@ export class PendingReconnectionStoreService {
               record
             );
 
-            console.log(
-              "wrote pending session by key:",
-              reconnectionKey.reconnectionToken
-            );
             resolve();
           })
         );
@@ -80,7 +76,6 @@ export class PendingReconnectionStoreService {
   ): Promise<PendingReconnection | null> {
     switch (reconnectionKey.type) {
       case ReconnectionKeyType.Auth:
-        console.log("auth reconnection");
         if (this.pendingAuthReconnectionPendingWrites) {
           await Promise.all(
             Array.from(this.pendingAuthReconnectionPendingWrites.values())
@@ -88,12 +83,6 @@ export class PendingReconnectionStoreService {
         }
         return this.byIdentityProviderId.get(reconnectionKey.userId) || null;
       case ReconnectionKeyType.Guest:
-        console.log(
-          "guest reconnection, pending writes",
-          this.pendingGuestReconnectionPendingWrites,
-          "available reconnections:",
-          this.byReconnectionToken
-        );
         await Promise.all(
           Array.from(this.pendingGuestReconnectionPendingWrites.values())
         );
@@ -111,10 +100,6 @@ export class PendingReconnectionStoreService {
         this.byIdentityProviderId.delete(reconnectionKey.userId);
         break;
       case ReconnectionKeyType.Guest:
-        console.log(
-          "DEL pending session by key:",
-          reconnectionKey.reconnectionToken
-        );
         this.byReconnectionToken.delete(reconnectionKey.reconnectionToken);
         break;
     }

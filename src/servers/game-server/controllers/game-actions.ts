@@ -15,7 +15,6 @@ export class GameActionsController {
   ) {}
 
   gameActionHandler(gameAction: string, session: UserSession) {
-    console.log("gameActionHandler called");
     const game = session.getExpectedCurrentGame();
     game.requireTimeStarted();
 
@@ -28,6 +27,7 @@ export class GameActionsController {
         data: { message: ERROR_MESSAGES.GAME.INPUT_LOCKED },
       });
     } else {
+      console.log("user taking action:", session.username);
       outbox.pushToChannel(game.getChannelName(), {
         type: MessageFromServerType.PlayerTookAction,
         data: { username: session.username, action: "" },
