@@ -33,12 +33,29 @@ export class LobbySessionLifecycleController implements SessionLifecycleControll
 
     const { username, taggedUserId } = authenticatedUserOption;
 
-    return new UserSession(
+    const userSession = new UserSession(
       username,
       connectionId,
       taggedUserId,
       this.gameRegistry
     );
+
+    if (context.clientCachedGuestReconnectionToken) {
+      console.log(
+        "set session cached token:",
+        context.clientCachedGuestReconnectionToken
+      );
+      userSession.setGuestReconnectionToken(
+        context.clientCachedGuestReconnectionToken
+      );
+    } else {
+      console.log(
+        "NO CACHED TOKEN:",
+        context.clientCachedGuestReconnectionToken
+      );
+    }
+
+    return userSession;
   }
 
   async activateSession(
@@ -74,12 +91,12 @@ export class LobbySessionLifecycleController implements SessionLifecycleControll
     return outbox;
   }
 
-  async cleanupSession(session: UserSession) {
+  cleanupSession(session: UserSession) {
     const outbox = new MessageDispatchOutbox(this.updateDispatchFactory);
 
     if (session.currentGameName !== null) {
       const leaveGameHandlerOutbox =
-        await this.gameLifecycleController.leaveGameHandler(session);
+        this.gameLifecycleController.leaveGameHandler(session);
       outbox.pushFromOther(leaveGameHandlerOutbox);
     }
 

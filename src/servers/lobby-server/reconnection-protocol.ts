@@ -3,6 +3,10 @@ import {
   MessageFromServer,
   MessageFromServerType,
 } from "../../messages/from-server.js";
+import {
+  localServerUrl,
+  TEST_GAME_SERVER_PORT,
+} from "../../tests/test-servers-setup.js";
 import { MessageDispatchFactory } from "../message-delivery/message-dispatch-factory.js";
 import { MessageDispatchOutbox } from "../message-delivery/outbox.js";
 import {
@@ -51,6 +55,7 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
     const pendingReconnectionOption =
       await this.getPendingReconnectionOption(session);
     if (!pendingReconnectionOption) {
+      console.log("no pending reconnection");
       return { type: ConnectionContextType.InitialConnection };
     }
 
@@ -59,6 +64,7 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
         pendingReconnectionOption.gameName
       );
     if (!gameStillExists) {
+      console.log("game no longer exists");
       return { type: ConnectionContextType.InitialConnection };
     }
 
@@ -111,12 +117,12 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
 
   onPlayerDisconnected(
     ...args: any[]
-  ): Promise<MessageDispatchOutbox<MessageFromServer>> {
+  ): MessageDispatchOutbox<MessageFromServer> {
     throw new Error("Method not implemented.");
   }
 
   private getGameServerUrlFromName(name: GameServerName) {
-    return "";
+    return localServerUrl(TEST_GAME_SERVER_PORT);
   }
 
   attemptReconnectionClaim(...args: any[]): Promise<void> {
@@ -126,10 +132,13 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
   private async getPendingReconnectionOption(session: UserSession) {
     const keyOption = session.getReconnectionKeyOption();
     if (keyOption === null) {
+      console.log("no key provided for reconnection");
       return null;
     }
-    return await this.pendingReconnectionStoreService.getPendingReconnection(
-      keyOption
-    );
+    const pendingReconnection =
+      await this.pendingReconnectionStoreService.getPendingReconnection(
+        keyOption
+      );
+    return pendingReconnection;
   }
 }

@@ -18,6 +18,7 @@ export enum MessageFromServerType {
   PlayerToggledReadyToStartGame,
   GameStarted,
   GameServerConnectionInstructions,
+  PlayerTookAction,
 }
 
 export interface MessageFromServerMap {
@@ -53,6 +54,10 @@ export interface MessageFromServerMap {
   };
   [MessageFromServerType.GameStarted]: {
     timeStarted: Milliseconds;
+  };
+  [MessageFromServerType.PlayerTookAction]: {
+    username: Username;
+    action: string;
   };
 }
 

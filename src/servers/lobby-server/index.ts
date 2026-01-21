@@ -92,7 +92,7 @@ export class LobbyServer extends BaseServer {
 
     const { username, taggedUserId } = session;
     console.info(
-      `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) joined the lobby`
+      `-- ${this.name} connection: ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}, token: ${identityResolutionContext.clientCachedGuestReconnectionToken})`
     );
 
     this.outgoingMessagesGateway.registerEndpoint(connectionId, socket);
@@ -124,15 +124,11 @@ export class LobbyServer extends BaseServer {
     }
   }
 
-  protected async disconnectionHandler(
-    session: UserSession,
-    code: number
-  ): Promise<void> {
+  protected disconnectionHandler(session: UserSession, code: number): void {
     console.info(
       `-- ${session.username} (${session.connectionId})  disconnected. Code - ${code}`
     );
-    const outbox =
-      await this.sessionLifecycleController.cleanupSession(session);
+    const outbox = this.sessionLifecycleController.cleanupSession(session);
     this.outgoingMessagesGateway.unregisterEndpoint(session.connectionId);
     this.dispatchOutboxMessages(outbox);
   }

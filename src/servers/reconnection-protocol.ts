@@ -19,7 +19,7 @@ export interface PlayerReconnectionProtocol {
   onPlayerDisconnected(
     session: UserSession,
     ...args: any[]
-  ): Promise<MessageDispatchOutbox<MessageFromServer>>;
+  ): MessageDispatchOutbox<MessageFromServer>;
   issueReconnectionCredential(
     session: UserSession,
     ...args: any[]

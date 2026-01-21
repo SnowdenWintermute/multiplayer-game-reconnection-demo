@@ -99,10 +99,10 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     ) as GuestSessionReconnectionToken;
   }
 
-  async onPlayerDisconnected(
+  onPlayerDisconnected(
     session: UserSession,
     gameServerName: GameServerName
-  ): Promise<MessageDispatchOutbox<MessageFromServer>> {
+  ): MessageDispatchOutbox<MessageFromServer> {
     const outbox = new MessageDispatchOutbox(this.updateDispatchFactory);
     const game = session.getExpectedCurrentGame();
 

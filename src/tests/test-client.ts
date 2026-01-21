@@ -4,7 +4,7 @@ import {
   MessageFromServer,
   MessageFromServerType,
 } from "../messages/from-server.js";
-import { Username } from "../aliases.js";
+import { Milliseconds, Username } from "../aliases.js";
 
 type MessageFromServerOfType<T extends MessageFromServerType> = Extract<
   MessageFromServer,
@@ -99,35 +99,32 @@ export class TestClient {
     return await messageFromServer;
   }
 
-  async oldAwaitMessageFromServer<T extends MessageFromServerType>(
-    expectedReplyType: T
-  ): Promise<MessageFromServerOfType<T>> {
-    return new Promise<MessageFromServerOfType<T>>((resolve) => {
-      const handler = (rawData: any) => {
-        const typedMessage = TestClient.getTypedMessage(rawData);
-        if (typedMessage.type === expectedReplyType) {
-          this.socket.off("message", handler);
-          resolve(typedMessage as MessageFromServerOfType<T>);
-        }
-      };
-
-      this.socket.on("message", handler);
-    });
-  }
+  static MESSAGE_WAIT_TIMEOUT = 400 as Milliseconds;
 
   async awaitMessageFromServer<T extends MessageFromServerType>(
     expectedReplyType: T
   ): Promise<MessageFromServerOfType<T>> {
     const socket = this.socket;
+    const messages: MessageFromServer[] = [];
 
     return new Promise<MessageFromServerOfType<T>>((resolve, reject) => {
       const onMessage = (rawData: RawData) => {
         const typedMessage = TestClient.getTypedMessage(rawData);
+        messages.push(typedMessage); // so we can see what we got if it fails
         if (typedMessage.type === expectedReplyType) {
           cleanup();
           resolve(typedMessage as MessageFromServerOfType<T>);
         }
       };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(
+          new Error(
+            `Timed out waiting for message of type ${expectedReplyType}, instead got ${JSON.stringify(messages, null, 2)}`
+          )
+        );
+      }, TestClient.MESSAGE_WAIT_TIMEOUT);
 
       const onClose = () => {
         cleanup();
@@ -135,6 +132,7 @@ export class TestClient {
       };
 
       const cleanup = () => {
+        clearTimeout(timer);
         socket.off("message", onMessage);
         socket.off("close", onClose);
       };

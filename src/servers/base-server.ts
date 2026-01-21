@@ -140,5 +140,5 @@ export abstract class BaseServer {
   protected abstract disconnectionHandler(
     session: UserSession,
     code: number
-  ): Promise<void>;
+  ): void;
 }

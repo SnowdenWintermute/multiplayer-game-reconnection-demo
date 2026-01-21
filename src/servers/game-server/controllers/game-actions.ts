@@ -27,9 +27,12 @@ export class GameActionsController {
         type: MessageFromServerType.ErrorMessage,
         data: { message: ERROR_MESSAGES.GAME.INPUT_LOCKED },
       });
+    } else {
+      outbox.pushToChannel(game.getChannelName(), {
+        type: MessageFromServerType.PlayerTookAction,
+        data: { username: session.username, action: "" },
+      });
     }
-
-    console.log("gameActionHandler", outbox.toDispatches());
 
     return outbox;
   }

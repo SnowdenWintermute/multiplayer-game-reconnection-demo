@@ -172,18 +172,18 @@ export class GameServer extends BaseServer {
     }
   }
 
-  protected async disconnectionHandler(session: UserSession, code: number) {
+  protected disconnectionHandler(session: UserSession, code: number) {
     console.info(
       `-- ${session.username} (${session.connectionId}) disconnected from ${this.name} game server. Disconnect code - ${code}`
     );
 
-    const outbox = await this.reconnectionProtocol.onPlayerDisconnected(
+    const outbox = this.reconnectionProtocol.onPlayerDisconnected(
       session,
       this.name
     );
 
     const cleanupSessionOutbox =
-      await this.sessionLifecycleController.cleanupSession(session);
+      this.sessionLifecycleController.cleanupSession(session);
     outbox.pushFromOther(cleanupSessionOutbox);
     this.outgoingMessagesGateway.unregisterEndpoint(session.connectionId);
 

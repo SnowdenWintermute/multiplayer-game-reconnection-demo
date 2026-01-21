@@ -14,7 +14,5 @@ export interface SessionLifecycleController<Sendable> {
     ...args: any[]
   ): Promise<MessageDispatchOutbox<Sendable>>;
 
-  cleanupSession(
-    session: UserSession
-  ): Promise<MessageDispatchOutbox<Sendable>>;
+  cleanupSession(session: UserSession): MessageDispatchOutbox<Sendable>;
 }

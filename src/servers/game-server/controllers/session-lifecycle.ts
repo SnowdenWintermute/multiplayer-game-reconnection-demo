@@ -113,7 +113,7 @@ export class GameServerSessionLifecycleController implements SessionLifecycleCon
     return outbox;
   }
 
-  async cleanupSession(session: UserSession) {
+  cleanupSession(session: UserSession) {
     const outbox = new MessageDispatchOutbox(this.updateDispatchFactory);
     this.userSessionRegistry.unregister(session.connectionId);
     return outbox;

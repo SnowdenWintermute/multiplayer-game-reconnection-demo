@@ -108,7 +108,7 @@ export class LobbyGameLifecycleController {
     return outbox;
   }
 
-  async leaveGameHandler(session: UserSession) {
+  leaveGameHandler(session: UserSession) {
     const game = session.getExpectedCurrentGame();
 
     const outbox = new MessageDispatchOutbox<MessageFromServer>(
