@@ -1,11 +1,10 @@
 import { RawData, WebSocket } from "ws";
-import { MessageFromClient } from "../messages/from-client.js";
+import { MessageFromClient } from "../../messages/from-client.js";
 import {
-  MESSAGE_FROM_SERVER_TYPE_STRINGS,
   MessageFromServer,
   MessageFromServerType,
-} from "../messages/from-server.js";
-import { Milliseconds, Username } from "../aliases.js";
+} from "../../messages/from-server.js";
+import { Milliseconds, Username } from "../../aliases.js";
 import isMatch from "lodash.ismatch";
 
 type MessageFromServerOfType<T extends MessageFromServerType> = Extract<

@@ -1,5 +1,4 @@
 import { GameRegistry } from "../game-registry/index.js";
-import { PendingReconnectionStoreService } from "../services/pending-reconnection-store/index.js";
 import { GameSessionStoreService } from "../services/game-session-store/index.js";
 import { WebSocketServer, WebSocket } from "ws";
 import {
@@ -20,6 +19,7 @@ import { BaseServer } from "../base-server.js";
 import { UserSession } from "../sessions/user-session.js";
 import { ConnectionContextType } from "../reconnection-protocol.js";
 import { createLobbyMessageFromClientHandlers } from "./create-message-handlers.js";
+import { GameServerReconnectionForwardingRecordStoreService } from "../services/game-server-reconnection-forwarding-record/index.js";
 
 export class LobbyServer extends BaseServer {
   protected readonly updateDispatchFactory =
@@ -35,7 +35,7 @@ export class LobbyServer extends BaseServer {
 
   constructor(
     private readonly identityProviderService: IdentityProviderService,
-    private readonly pendingReconnectionStoreService: PendingReconnectionStoreService,
+    private readonly gameServerReconnectionForwardingRecordStoreService: GameServerReconnectionForwardingRecordStoreService,
     private readonly gameSessionStoreService: GameSessionStoreService,
     public readonly websocketServer: WebSocketServer,
     private readonly gameServerSessionClaimTokenCodec: GameServerSessionClaimTokenCodec,
@@ -54,7 +54,7 @@ export class LobbyServer extends BaseServer {
       gameServerSessionClaimTokenCodec,
       this.updateDispatchFactory,
       gameSessionStoreService,
-      pendingReconnectionStoreService
+      gameServerReconnectionForwardingRecordStoreService
     );
 
     this.gameLifecycleController = new LobbyGameLifecycleController(

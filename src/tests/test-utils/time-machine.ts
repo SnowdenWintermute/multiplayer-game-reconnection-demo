@@ -1,5 +1,4 @@
 import { vi } from "vitest";
-import { Milliseconds } from "../aliases";
 
 export class TimeMachine {
   private originalDateNow: () => number = Date.now;

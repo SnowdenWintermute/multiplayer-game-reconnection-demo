@@ -14,9 +14,9 @@ import {
   ConnectionContextType,
   PlayerReconnectionProtocol,
 } from "../../reconnection-protocol.js";
+import { GameServerReconnectionForwardingRecord } from "../../services/game-server-reconnection-forwarding-record/game-server-reconnection-forwarding-record.js";
+import { GameServerReconnectionForwardingRecordStoreService } from "../../services/game-server-reconnection-forwarding-record/index.js";
 import { UserIdType } from "../../services/identity-provider/tagged-user-id.js";
-import { PendingReconnectionStoreService } from "../../services/pending-reconnection-store/index.js";
-import { PendingReconnection } from "../../services/pending-reconnection-store/pending-reconnection.js";
 import { UserSession } from "../../sessions/user-session.js";
 import { GameServerGameLifecycleController } from "../controllers/game-lifecycle.js";
 import { ReconnectionOpportunityManager } from "./reconnection-opportunity-manager.js";
@@ -41,7 +41,7 @@ export type GameServerConnectionContext =
 export class GameServerReconnectionProtocol implements PlayerReconnectionProtocol {
   constructor(
     private readonly updateDispatchFactory: MessageDispatchFactory<MessageFromServer>,
-    private readonly pendingReconnectionStoreService: PendingReconnectionStoreService,
+    private readonly gameServerReconnectionForwardingRecordStoreService: GameServerReconnectionForwardingRecordStoreService,
     private readonly reconnectionOpportunityManager: ReconnectionOpportunityManager,
     private readonly gameLifecycleController: GameServerGameLifecycleController,
     private readonly dispatchOutboxMessages: (
@@ -111,14 +111,15 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     //   `reconnection is permitted, saving a reconnection session for ${username} ${taggedUserId.id}`
     // );
 
-    const pendingReconnection = PendingReconnection.fromUserSession(
-      session,
-      gameServerName
-    );
+    const gameServerReconnectionForwardingRecord =
+      GameServerReconnectionForwardingRecord.fromUserSession(
+        session,
+        gameServerName
+      );
 
-    this.pendingReconnectionStoreService.writePendingReconnection(
+    this.gameServerReconnectionForwardingRecordStoreService.writeGameServerReconnectionForwardingRecord(
       session.requireReconnectionKey(),
-      pendingReconnection
+      gameServerReconnectionForwardingRecord
     );
 
     game.inputLock.add(session.taggedUserId.id);
@@ -153,7 +154,7 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     );
 
     try {
-      await this.pendingReconnectionStoreService.deletePendingReconnection(
+      await this.gameServerReconnectionForwardingRecordStoreService.deleteGameServerReconnectionForwardingRecord(
         session.requireReconnectionKey()
       );
     } catch (error) {
@@ -193,7 +194,7 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     this.reconnectionOpportunityManager.remove(
       session.requireReconnectionKey()
     );
-    await this.pendingReconnectionStoreService.deletePendingReconnection(
+    await this.gameServerReconnectionForwardingRecordStoreService.deleteGameServerReconnectionForwardingRecord(
       session.requireReconnectionKey()
     );
 

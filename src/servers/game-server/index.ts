@@ -3,7 +3,6 @@ import { GameServerName, Milliseconds } from "../../aliases.js";
 import { BaseServer } from "../base-server.js";
 import { GameRegistry } from "../game-registry/index.js";
 import { GameSessionStoreService } from "../services/game-session-store/index.js";
-import { PendingReconnectionStoreService } from "../services/pending-reconnection-store/index.js";
 import { UserSession } from "../sessions/user-session.js";
 import { GameServerSessionClaimTokenCodec } from "../lobby-server/game-handoff/game-server-session-claim-token.js";
 import { ConnectionIdentityResolutionContext } from "../services/identity-provider/index.js";
@@ -20,10 +19,11 @@ import { GameServerReconnectionProtocol } from "./reconnection/reconnection-prot
 import { invariant } from "../../utils/index.js";
 import { ConnectionContextType } from "../reconnection-protocol.js";
 import { GameActionsController } from "./controllers/game-actions.js";
+import { GameServerReconnectionForwardingRecordStoreService } from "../services/game-server-reconnection-forwarding-record/index.js";
 
 export interface GameServerExternalServices {
   gameSessionStoreService: GameSessionStoreService;
-  pendingReconnectionStoreService: PendingReconnectionStoreService;
+  gameServerReconnectionForwardingRecordStoreService: GameServerReconnectionForwardingRecordStoreService;
 }
 
 const GAME_RECORD_HEARTBEAT_MS = (1000 * 10) as Milliseconds;
@@ -46,7 +46,7 @@ export class GameServer extends BaseServer {
 
   constructor(
     readonly name: GameServerName,
-    private readonly pendingReconnectionStoreService: PendingReconnectionStoreService,
+    private readonly gameServerReconnectionForwardingRecordStoreService: GameServerReconnectionForwardingRecordStoreService,
     private readonly gameSessionStoreService: GameSessionStoreService,
     public readonly websocketServer: WebSocketServer,
     private readonly gameServerSessionClaimTokenCodec: GameServerSessionClaimTokenCodec
@@ -65,7 +65,7 @@ export class GameServer extends BaseServer {
       this.gameRegistry,
       this.userSessionRegistry,
       gameSessionStoreService,
-      pendingReconnectionStoreService,
+      gameServerReconnectionForwardingRecordStoreService,
       this.updateDispatchFactory
     );
 
@@ -83,7 +83,7 @@ export class GameServer extends BaseServer {
 
     this.reconnectionProtocol = new GameServerReconnectionProtocol(
       this.updateDispatchFactory,
-      this.pendingReconnectionStoreService,
+      this.gameServerReconnectionForwardingRecordStoreService,
       this.reconnectionOpportunityManager,
       this.gameLifecycleController,
       (outbox) => this.dispatchOutboxMessages(outbox)

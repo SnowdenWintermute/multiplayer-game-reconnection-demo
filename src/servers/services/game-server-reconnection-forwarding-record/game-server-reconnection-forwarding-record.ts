@@ -7,7 +7,7 @@ import { ERROR_MESSAGES } from "../../../error-messages.js";
 import { UserSession } from "../../sessions/user-session.js";
 import { TaggedUserId } from "../identity-provider/tagged-user-id.js";
 
-export class PendingReconnection {
+export class GameServerReconnectionForwardingRecord {
   constructor(
     public readonly taggedUserId: TaggedUserId,
     public readonly gameName: GameName,
@@ -20,7 +20,7 @@ export class PendingReconnection {
       throw new Error(ERROR_MESSAGES.USER_SESSION.NOT_IN_GAME);
     }
 
-    return new PendingReconnection(
+    return new GameServerReconnectionForwardingRecord(
       session.taggedUserId,
       session.currentGameName,
       gameServerName,

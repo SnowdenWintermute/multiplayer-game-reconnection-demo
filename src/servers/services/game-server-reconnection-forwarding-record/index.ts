@@ -3,7 +3,7 @@ import {
   GuestSessionReconnectionToken,
   IdentityProviderId,
 } from "../../../aliases.js";
-import { PendingReconnection } from "./pending-reconnection.js";
+import { GameServerReconnectionForwardingRecord } from "./game-server-reconnection-forwarding-record.js";
 
 export enum ReconnectionKeyType {
   Auth,
@@ -22,14 +22,14 @@ export interface AuthReconnectionKey {
 
 export type ReconnectionKey = GuestReconnectionKey | AuthReconnectionKey;
 
-export class PendingReconnectionStoreService {
+export class GameServerReconnectionForwardingRecordStoreService {
   private byIdentityProviderId = new Map<
     IdentityProviderId,
-    PendingReconnection
+    GameServerReconnectionForwardingRecord
   >();
   private byReconnectionToken = new Map<
     GuestSessionReconnectionToken,
-    PendingReconnection
+    GameServerReconnectionForwardingRecord
   >();
 
   private pendingGuestReconnectionPendingWrites = new Map<
@@ -41,9 +41,9 @@ export class PendingReconnectionStoreService {
     Promise<void>
   >();
 
-  writePendingReconnection(
+  writeGameServerReconnectionForwardingRecord(
     reconnectionKey: ReconnectionKey,
-    record: PendingReconnection
+    record: GameServerReconnectionForwardingRecord
   ) {
     switch (reconnectionKey.type) {
       case ReconnectionKeyType.Auth:
@@ -71,9 +71,9 @@ export class PendingReconnectionStoreService {
     }
   }
 
-  async getPendingReconnection(
+  async getGameServerReconnectionForwardingRecord(
     reconnectionKey: ReconnectionKey
-  ): Promise<PendingReconnection | null> {
+  ): Promise<GameServerReconnectionForwardingRecord | null> {
     switch (reconnectionKey.type) {
       case ReconnectionKeyType.Auth:
         if (this.pendingAuthReconnectionPendingWrites) {
@@ -92,7 +92,7 @@ export class PendingReconnectionStoreService {
         );
     }
   }
-  async deletePendingReconnection(
+  async deleteGameServerReconnectionForwardingRecord(
     reconnectionKey: ReconnectionKey
   ): Promise<void> {
     switch (reconnectionKey.type) {
@@ -106,15 +106,19 @@ export class PendingReconnectionStoreService {
   }
 
   async deleteAllInGame(gameName: GameName) {
-    for (const [identityProviderId, pendingReconnection] of this
-      .byIdentityProviderId) {
-      if (pendingReconnection.gameName === gameName) {
+    for (const [
+      identityProviderId,
+      gameServerReconnectionForwardingRecord,
+    ] of this.byIdentityProviderId) {
+      if (gameServerReconnectionForwardingRecord.gameName === gameName) {
         this.byIdentityProviderId.delete(identityProviderId);
       }
     }
-    for (const [reconnectionToken, pendingReconnection] of this
-      .byReconnectionToken) {
-      if (pendingReconnection.gameName === gameName) {
+    for (const [
+      reconnectionToken,
+      gameServerReconnectionForwardingRecord,
+    ] of this.byReconnectionToken) {
+      if (gameServerReconnectionForwardingRecord.gameName === gameName) {
         this.byReconnectionToken.delete(reconnectionToken);
       }
     }

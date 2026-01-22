@@ -5,7 +5,7 @@ import {
 import {
   ReconnectionKey,
   ReconnectionKeyType,
-} from "../../services/pending-reconnection-store/index.js";
+} from "../../services/game-server-reconnection-forwarding-record/index.js";
 import { ReconnectionOpportunity } from "./reconnection-opportunity.js";
 
 export class ReconnectionOpportunityManager {

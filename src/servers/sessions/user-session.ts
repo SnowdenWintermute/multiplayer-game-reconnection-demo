@@ -15,7 +15,7 @@ import {
 import {
   ReconnectionKey,
   ReconnectionKeyType,
-} from "../services/pending-reconnection-store/index.js";
+} from "../services/game-server-reconnection-forwarding-record/index.js";
 import { ConnectionSession } from "./connection-session.js";
 
 export class UserSession extends ConnectionSession {

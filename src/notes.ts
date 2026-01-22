@@ -7,7 +7,7 @@
 // - is trusted as a source of true identity
 // - will not result in a valid session if no matching game exists
 //
-// PendingReconnection
+// GameServerReconnectionForwardingRecord
 // - written by game server on disconnect
 // - read from lobby server on reconnect if client presents
 //   reconnect token
@@ -20,9 +20,9 @@
 // - created on disconnect
 // - sets internal timeout for expiration
 // - on expiration, unpauses game for players that are still connected
-//   and deletes the PendingReconnection
+//   and deletes the GameServerReconnectionForwardingRecord
 // - ultimate authority for expiration of a valid reconnection
-// - it is possible that lobby reads a PendingReconnection, sends a client
+// - it is possible that lobby reads a GameServerReconnectionForwardingRecord, sends a client
 //   instructions to connect to a game server, then the ReconnectionOpportunity times out
 //   before they finish their connection to the game server. this is intended.
 //
@@ -30,5 +30,5 @@
 // - given to the client when they join a game server
 // - cached on the client
 // - presented to the lobby when client joins
-// - lobby uses it to look up a PendingReconnection
+// - lobby uses it to look up a GameServerReconnectionForwardingRecord
 // - if none is found, connection is treated as a new connection

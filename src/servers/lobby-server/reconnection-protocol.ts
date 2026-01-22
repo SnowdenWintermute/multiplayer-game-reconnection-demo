@@ -6,16 +6,16 @@ import {
 import {
   localServerUrl,
   TEST_GAME_SERVER_PORT,
-} from "../../tests/test-servers-setup.js";
+} from "../../tests/fixtures/test-servers-setup.js";
 import { MessageDispatchFactory } from "../message-delivery/message-dispatch-factory.js";
 import { MessageDispatchOutbox } from "../message-delivery/outbox.js";
 import {
   ConnectionContextType,
   PlayerReconnectionProtocol,
 } from "../reconnection-protocol.js";
+import { GameServerReconnectionForwardingRecord } from "../services/game-server-reconnection-forwarding-record/game-server-reconnection-forwarding-record.js";
+import { GameServerReconnectionForwardingRecordStoreService } from "../services/game-server-reconnection-forwarding-record/index.js";
 import { GameSessionStoreService } from "../services/game-session-store/index.js";
-import { PendingReconnectionStoreService } from "../services/pending-reconnection-store/index.js";
-import { PendingReconnection } from "../services/pending-reconnection-store/pending-reconnection.js";
 import { UserSession } from "../sessions/user-session.js";
 import {
   GameServerSessionClaimToken,
@@ -40,7 +40,7 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
     private readonly gameServerSessionClaimTokenCodec: GameServerSessionClaimTokenCodec,
     private readonly updateDispatchFactory: MessageDispatchFactory<MessageFromServer>,
     private readonly gameSessionStoreService: GameSessionStoreService,
-    private readonly pendingReconnectionStoreService: PendingReconnectionStoreService
+    private readonly gameServerReconnectionForwardingRecordStoreService: GameServerReconnectionForwardingRecordStoreService
   ) {}
 
   async evaluateConnectionContext(
@@ -52,16 +52,16 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
     // the game server needs to know when the disconnectedSession expires or is claimed so it can remove the
     // input lock's RC for that user in the game. also, if they get their claim token then disconnect before
     // reconnecting to the game server they won't be able to reconnect again if we delete it now.
-    const pendingReconnectionOption =
-      await this.getPendingReconnectionOption(session);
+    const gameServerReconnectionForwardingRecordOption =
+      await this.getGameServerReconnectionForwardingRecordOption(session);
 
-    if (!pendingReconnectionOption) {
+    if (!gameServerReconnectionForwardingRecordOption) {
       return { type: ConnectionContextType.InitialConnection };
     }
 
     const gameStillExists =
       await this.gameSessionStoreService.getActiveGameStatus(
-        pendingReconnectionOption.gameName
+        gameServerReconnectionForwardingRecordOption.gameName
       );
 
     if (!gameStillExists) {
@@ -73,28 +73,29 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
       issueCredentials: async () =>
         await this.issueReconnectionCredential(
           session,
-          pendingReconnectionOption
+          gameServerReconnectionForwardingRecordOption
         ),
     };
   }
 
   async issueReconnectionCredential(
     session: UserSession,
-    pendingReconnection: PendingReconnection
+    gameServerReconnectionForwardingRecord: GameServerReconnectionForwardingRecord
   ) {
     const outbox = new MessageDispatchOutbox(this.updateDispatchFactory);
     const claimToken = new GameServerSessionClaimToken(
-      pendingReconnection.gameName,
+      gameServerReconnectionForwardingRecord.gameName,
       session.username,
-      pendingReconnection.taggedUserId,
-      pendingReconnection.guestUserReconnectionTokenOption || undefined
+      gameServerReconnectionForwardingRecord.taggedUserId,
+      gameServerReconnectionForwardingRecord.guestUserReconnectionTokenOption ||
+        undefined
     );
 
     const encryptedSessionClaimToken =
       await this.gameServerSessionClaimTokenCodec.encode(claimToken);
 
     const url = this.getGameServerUrlFromName(
-      pendingReconnection.gameServerName
+      gameServerReconnectionForwardingRecord.gameServerName
     );
 
     outbox.pushToConnection(session.connectionId, {
@@ -109,7 +110,7 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
 
     const { username, taggedUserId, connectionId } = session;
     // console.info(
-    //   `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) was given instructions to reconnect to server ${pendingReconnection.gameServerName} at url ${url}`
+    //   `-- ${username} (user id: ${taggedUserId.id}, connection id: ${connectionId}) was given instructions to reconnect to server ${gameServerReconnectionForwardingRecord.gameServerName} at url ${url}`
     // );
 
     return outbox;
@@ -129,15 +130,17 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
     throw new Error("Method not implemented.");
   }
 
-  private async getPendingReconnectionOption(session: UserSession) {
+  private async getGameServerReconnectionForwardingRecordOption(
+    session: UserSession
+  ) {
     const keyOption = session.getReconnectionKeyOption();
     if (keyOption === null) {
       return null;
     }
-    const pendingReconnection =
-      await this.pendingReconnectionStoreService.getPendingReconnection(
+    const gameServerReconnectionForwardingRecord =
+      await this.gameServerReconnectionForwardingRecordStoreService.getGameServerReconnectionForwardingRecord(
         keyOption
       );
-    return pendingReconnection;
+    return gameServerReconnectionForwardingRecord;
   }
 }
