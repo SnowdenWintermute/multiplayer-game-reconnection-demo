@@ -1,10 +1,12 @@
 import { RawData, WebSocket } from "ws";
 import { MessageFromClient } from "../messages/from-client.js";
 import {
+  MESSAGE_FROM_SERVER_TYPE_STRINGS,
   MessageFromServer,
   MessageFromServerType,
 } from "../messages/from-server.js";
 import { Milliseconds, Username } from "../aliases.js";
+import isMatch from "lodash.ismatch";
 
 type MessageFromServerOfType<T extends MessageFromServerType> = Extract<
   MessageFromServer,
@@ -93,10 +95,12 @@ export class TestClient {
   async sendMessageAndAwaitReplyType<T extends MessageFromServerType>(
     message: MessageFromClient,
     expectedReplyType: T,
-    options?: { logMessage: boolean }
+    options?: { logMessage?: boolean; expectedData?: any }
   ): Promise<MessageFromServerOfType<T>> {
-    const messageFromServerListener =
-      this.awaitMessageFromServer(expectedReplyType);
+    const messageFromServerListener = this.awaitMessageFromServer(
+      expectedReplyType,
+      options?.expectedData
+    );
     this.socket.send(JSON.stringify(message));
 
     const messageFromServer = await messageFromServerListener;
@@ -109,7 +113,8 @@ export class TestClient {
   static MESSAGE_WAIT_TIMEOUT = 400 as Milliseconds;
 
   async awaitMessageFromServer<T extends MessageFromServerType>(
-    expectedReplyType: T
+    expectedReplyType: T,
+    expectedData?: any
   ): Promise<MessageFromServerOfType<T>> {
     const socket = this.socket;
     const messages: MessageFromServer[] = [];
@@ -118,7 +123,13 @@ export class TestClient {
       const onMessage = (rawData: RawData) => {
         const typedMessage = TestClient.getTypedMessage(rawData);
         messages.push(typedMessage); // so we can see what we got if it fails
-        if (typedMessage.type === expectedReplyType) {
+
+        const matchingType = typedMessage.type === expectedReplyType;
+        const noDataMatchRequired = expectedData === undefined;
+        const dataIsMatch = isMatch(typedMessage.data, expectedData);
+        const matchingDataOrNotRelevant = noDataMatchRequired || dataIsMatch;
+
+        if (matchingType && matchingDataOrNotRelevant) {
           cleanup();
           resolve(typedMessage as MessageFromServerOfType<T>);
         }

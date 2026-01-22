@@ -23,7 +23,7 @@ import { ReconnectionOpportunityManager } from "./reconnection-opportunity-manag
 import { ReconnectionOpportunity } from "./reconnection-opportunity.js";
 import { randomBytes } from "crypto";
 
-export const RECONNECTION_OPPORTUNITY_TIMOUT_MS = (1000 * 120) as Milliseconds;
+export const RECONNECTION_OPPORTUNITY_TIMEOUT_MS = (1000 * 120) as Milliseconds;
 
 interface GameServerReconnectionContext {
   type: ConnectionContextType.Reconnection;
@@ -135,7 +135,7 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     this.reconnectionOpportunityManager.add(
       session.requireReconnectionKey(),
       new ReconnectionOpportunity(
-        RECONNECTION_OPPORTUNITY_TIMOUT_MS,
+        RECONNECTION_OPPORTUNITY_TIMEOUT_MS,
         session.username,
         onReconnectionTimeout
       )
@@ -148,6 +148,7 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     session: UserSession,
     game: MyGameClass
   ) {
+    console.log("running reconnectionTimeoutHandler");
     this.reconnectionOpportunityManager.remove(
       session.requireReconnectionKey()
     );
@@ -170,6 +171,7 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     });
 
     game.inputLock.remove(session.taggedUserId.id);
+    console.log("game inputlock:", game.inputLock);
 
     const leaveGameHandlerOutbox =
       await this.gameLifecycleController.leaveGameHandler(session);

@@ -21,6 +21,29 @@ export enum MessageFromServerType {
   PlayerTookAction,
 }
 
+export const MESSAGE_FROM_SERVER_TYPE_STRINGS: Record<
+  MessageFromServerType,
+  string
+> = {
+  [MessageFromServerType.ClientUsername]: "ClientUsername",
+  [MessageFromServerType.CacheGuestSessionReconnectionToken]:
+    "CacheGuestSessionReconnectionToken",
+  [MessageFromServerType.ErrorMessage]: "ErrorMessage",
+  [MessageFromServerType.GameFullUpdate]: "GameFullUpdate",
+  [MessageFromServerType.PlayerLeftGame]: "PlayerLeftGame",
+  [MessageFromServerType.PlayerJoinedGame]: "PlayerJoinedGame",
+  [MessageFromServerType.PlayerDisconnectedWithReconnectionOpportunity]:
+    "PlayerDisconnectedWithReconnectionOpportunity",
+  [MessageFromServerType.PlayerReconnectionTimedOut]:
+    "PlayerReconnectionTimedOut",
+  [MessageFromServerType.PlayerToggledReadyToStartGame]:
+    "PlayerToggledReadyToStartGame",
+  [MessageFromServerType.GameStarted]: "GameStarted",
+  [MessageFromServerType.GameServerConnectionInstructions]:
+    "GameServerConnectionInstructions",
+  [MessageFromServerType.PlayerTookAction]: "PlayerTookAction",
+};
+
 export interface MessageFromServerMap {
   [MessageFromServerType.ClientUsername]: {
     username: Username;

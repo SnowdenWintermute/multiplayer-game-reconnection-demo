@@ -14,12 +14,14 @@
     "class-transformer": "^0.5.1",
     "libsodium-wrappers": "0.8.0",
     "lodash.clonedeep": "^4.5.0",
+    "lodash.ismatch": "^4.4.0",
     "uuid": "^13.0.0",
     "ws": "^8.19.0"
   },
   "devDependencies": {
     "@types/libsodium-wrappers": "^0.7.14",
     "@types/lodash.clonedeep": "^4.5.9",
+    "@types/lodash.ismatch": "^4.4.9",
     "@types/node": "^25.0.9",
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.33.0",

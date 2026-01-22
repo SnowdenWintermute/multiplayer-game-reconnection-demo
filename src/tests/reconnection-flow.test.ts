@@ -13,29 +13,34 @@ import {
   TEST_LOBBY_PORT,
 } from "./test-servers-setup.js";
 import { QUERY_PARAMS } from "../servers/base-server.js";
-import { ERROR_MESSAGES } from "../error-messages.js";
+import { RECONNECTION_OPPORTUNITY_TIMEOUT_MS } from "../servers/game-server/reconnection/reconnection-protocol.js";
+import { vi } from "vitest";
 
 const lobbyUrl = localServerUrl(TEST_LOBBY_PORT);
 
 describe("lobby server", () => {
   let gameServer: GameServer;
   let lobbyServer: LobbyServer;
+  const originalDateNow: () => number = Date.now;
+
   beforeEach(async () => {
     const testServers = await setUpTestServers();
     lobbyServer = testServers.lobbyServer;
     gameServer = testServers.gameServer;
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     lobbyServer.websocketServer.close();
     gameServer.websocketServer.close();
+    vi.useRealTimers();
+    Date.now = originalDateNow;
   });
 
-  // it("reconnect flow", async () => {
+  // it("input while awaiting reconnect", async () => {
   //   const { joinerClient, hostClient, joinerReconnectToken } =
   //     await testGameSetupToJoinerDisconnect(lobbyServer);
 
-  //   // don't allow host to input while waiting reconnect
   //   const noInputWhileWaitingReconnectMessage =
   //     await hostClient.sendMessageAndAwaitReplyType(
   //       {
@@ -50,30 +55,13 @@ describe("lobby server", () => {
   //   );
   // });
 
-  // it("input after timeout", async () => {
-  //   const { joinerClient, hostClient } =
-  //     await testGameSetupToSuccessfulReconnect(lobbyServer);
-  //   // @TODO allow host to input after timeout
-  // });
+  it("input after timeout", async () => {
+    const { hostClient } = await testGameSetupToJoinerDisconnect(lobbyServer);
 
-  // it("no reconnect after timeout", async () => {
-  //   const { joinerClient, hostClient } =
-  //     await testGameSetupToSuccessfulReconnect(lobbyServer);
-  //   // @TODO don't allow reconnect after timeout
-  // });
+    vi.advanceTimersByTime(RECONNECTION_OPPORTUNITY_TIMEOUT_MS);
 
-  it("input after reconnect", async () => {
-    const { joinerClient, hostClient } =
-      await testGameSetupToSuccessfulReconnect(lobbyServer);
-
-    console.log(
-      "joinerClient:",
-      joinerClient.username,
-      "host client:",
-      hostClient.username
-    );
-
-    const hostInputPermittedMessage =
+    vi.useRealTimers(); // otherwise our test helper will never time out
+    const inputAllowedAfterReconnectTimeoutMessage =
       await hostClient.sendMessageAndAwaitReplyType(
         {
           type: MessageFromClientType.AttemptGameplayAction,
@@ -82,30 +70,66 @@ describe("lobby server", () => {
         MessageFromServerType.PlayerTookAction
       );
 
-    expect(hostInputPermittedMessage.data.username).toBe(hostClient.username);
-
-    const joinerInputPermittedMessage =
-      await joinerClient.sendMessageAndAwaitReplyType(
-        {
-          type: MessageFromClientType.AttemptGameplayAction,
-          data: { action: "" },
-        },
-        MessageFromServerType.PlayerTookAction
-      );
-
-    console.log(
-      "joinerInputPermittedMessage.data.username:",
-      joinerInputPermittedMessage.data.username,
-      "joiner client name",
-      joinerClient.username
+    expect(inputAllowedAfterReconnectTimeoutMessage.data.username).toBe(
+      hostClient.username
     );
-
-    // expect(joinerInputPermittedMessage.data.username).toBe(
-    //   joinerClient.username
-    // );
   });
 
-  // it("token reuse", async () => {
+  // it("no reconnect after timeout", async () => {
+  //   const { joinerClient, hostClient, joinerReconnectToken } =
+  //     await testGameSetupToJoinerDisconnect(lobbyServer);
+  //   // @TODO don't allow reconnect after timeout
+  // });
+
+  // it("input after reconnect", async () => {
+  //   const { joinerClient, hostClient } =
+  //     await testGameSetupToSuccessfulReconnect(lobbyServer);
+
+  //   console.log(
+  //     "about to have CLIENT send action message:",
+  //     "joinerClient:",
+  //     joinerClient.username,
+  //     "host client:",
+  //     hostClient.username
+  //   );
+
+  //   const hostInputPermittedMessage =
+  //     await hostClient.sendMessageAndAwaitReplyType(
+  //       {
+  //         type: MessageFromClientType.AttemptGameplayAction,
+  //         data: { action: "" },
+  //       },
+  //       MessageFromServerType.PlayerTookAction
+  //     );
+
+  //   expect(hostInputPermittedMessage.data.username).toBe(hostClient.username);
+
+  //   // We must pass the expected data because otherwise joiner client will
+  //   // receive its message that the host took action BEFORE it receives
+  //   // the notification that the joiner client took action. See the fanout code in
+  //   // OutgoingMessageGateway.
+  //   const joinerInputPermittedMessage =
+  //     await joinerClient.sendMessageAndAwaitReplyType(
+  //       {
+  //         type: MessageFromClientType.AttemptGameplayAction,
+  //         data: { action: "" },
+  //       },
+  //       MessageFromServerType.PlayerTookAction,
+  //       { expectedData: { username: joinerClient.username } }
+  //     );
+
+  //   expect(joinerInputPermittedMessage.data.username).toBe(
+  //     joinerClient.username
+  //   );
+  // });
+
+  // it("reconnect token reuse", async () => {
+  //   const { joinerClient, hostClient } =
+  //     await testGameSetupToSuccessfulReconnect(lobbyServer);
+  //   // @TODO don't allow reconnect after timeout
+  // });
+
+  // it("session claim token reuse", async () => {
   //   const { hostClient, hostConnectionInstructions, hostClientQueryParams } =
   //     await testGameSetupToHostJoinGameServer(lobbyServer);
 
