@@ -157,14 +157,19 @@ export class GameServer extends BaseServer {
 
       const outbox =
         await this.sessionLifecycleController.activateSession(session);
+
       const joinGameOutbox = await this.gameLifecycleController.joinGameHandler(
         gameName,
         session
       );
       outbox.pushFromOther(joinGameOutbox);
+
+      // only after successfully reconnecting do we want the client to replace their
+      // cached token
       const refreshedReconnectionTokenOutbox =
         await this.reconnectionProtocol.issueReconnectionCredential(session);
       outbox.pushFromOther(refreshedReconnectionTokenOutbox);
+
       this.dispatchOutboxMessages(outbox);
     } catch (error) {
       socket.close(1008, JSON.stringify(error));

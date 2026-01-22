@@ -204,6 +204,8 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     // give them a username that matches their old one if they are a guest since guest would have
     // some randomly assigned name and we need to give them the name they had when they disconnected
     // so it will match their player in game
+    //
+    // also, lobby only assigns a name if they are not being forwarded to a game server
     session.username = reconnectionOpportunityOption.username;
   }
 }

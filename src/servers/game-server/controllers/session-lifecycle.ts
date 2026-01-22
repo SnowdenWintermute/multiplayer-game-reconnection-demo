@@ -83,6 +83,7 @@ export class GameServerSessionLifecycleController implements SessionLifecycleCon
     );
 
     if (decryptedToken.reconnectionTokenOption) {
+      // will be used to check if reconnection is still valid
       newSession.setGuestReconnectionToken(
         decryptedToken.reconnectionTokenOption
       );
