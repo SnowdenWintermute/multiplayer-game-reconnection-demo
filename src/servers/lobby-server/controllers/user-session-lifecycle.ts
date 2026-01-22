@@ -61,12 +61,6 @@ export class LobbySessionLifecycleController implements SessionLifecycleControll
       this.updateDispatchFactory
     );
 
-    // tell the client their username
-    outbox.pushToConnection(session.connectionId, {
-      type: MessageFromServerType.ClientUsername,
-      data: { username: session.username },
-    });
-
     // don't set up all their lobby stuff because we just want to forward them
     // to their disconnected session in the game server
     if (options?.sessionWillBeForwardedToGameServer) {

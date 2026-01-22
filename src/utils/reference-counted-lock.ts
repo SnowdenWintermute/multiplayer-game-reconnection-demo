@@ -23,7 +23,6 @@ export class ReferenceCountedLock<T> {
 
   get isLocked() {
     const isLocked = this.references.size > 0;
-    console.log("is locked:", isLocked);
     return isLocked;
   }
 }

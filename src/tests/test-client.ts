@@ -38,16 +38,41 @@ export class TestClient {
     this._socket = socket;
   }
 
+  async close() {
+    // race condition explained:
+    // - we close the socket
+    // - server is listening for "close" event, but it doesn't fire until the OS
+    //   completes the socket cleanup (shutdown, resource release, etc.)
+    // - we open a new socket in our code
+    // - server is listening for "connection" event, which fires after the OS
+    //   completes the TCP handshake for the new connection
+    // - these are two independent I/O operations - whichever completes first
+    //   will have its event queued and handler run first
+    // - on localhost, the new connection handshake can complete faster than
+    //   the old socket's cleanup, causing "connection" to fire before "close"
+    await new Promise<void>((resolve) => {
+      this.socket.once("close", () => resolve());
+      this.socket.close();
+    });
+  }
+
   async connect() {
     const usernameAssignment = this.awaitMessageFromServer(
       MessageFromServerType.ClientUsername
+    ).then((message) => {
+      this._username = message.data.username;
+    });
+    const reconnectionInstructions = this.awaitMessageFromServer(
+      MessageFromServerType.GameServerConnectionInstructions
     );
 
     await new Promise<void>((resolve, reject) => {
       const onOpen = async () => {
         try {
-          const usernameMessage = await usernameAssignment;
-          this._username = usernameMessage.data.username;
+          const connectionMessage = await Promise.any([
+            usernameAssignment,
+            reconnectionInstructions,
+          ]);
           cleanup();
           resolve();
         } catch (error) {

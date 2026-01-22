@@ -54,6 +54,7 @@ export class LobbyReconnectionProtocol implements PlayerReconnectionProtocol {
     // reconnecting to the game server they won't be able to reconnect again if we delete it now.
     const pendingReconnectionOption =
       await this.getPendingReconnectionOption(session);
+
     if (!pendingReconnectionOption) {
       return { type: ConnectionContextType.InitialConnection };
     }

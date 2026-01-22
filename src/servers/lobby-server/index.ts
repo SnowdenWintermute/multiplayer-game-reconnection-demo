@@ -9,7 +9,10 @@ import {
 import { LobbyReconnectionProtocol } from "./reconnection-protocol.js";
 import { GameHandoffManager } from "./game-handoff/game-handoff-manager.js";
 import { MessageDispatchFactory } from "../message-delivery/message-dispatch-factory.js";
-import { MessageFromServer } from "../../messages/from-server.js";
+import {
+  MessageFromServer,
+  MessageFromServerType,
+} from "../../messages/from-server.js";
 import { GameServerSessionClaimTokenCodec } from "./game-handoff/game-server-session-claim-token.js";
 import { LobbyGameLifecycleController } from "./controllers/game-lifecycle.js";
 import { LobbySessionLifecycleController } from "./controllers/user-session-lifecycle.js";
@@ -120,6 +123,13 @@ export class LobbyServer extends BaseServer {
 
       const outbox =
         await this.sessionLifecycleController.activateSession(session);
+
+      // tell the client their username
+      outbox.pushToConnection(session.connectionId, {
+        type: MessageFromServerType.ClientUsername,
+        data: { username: session.username },
+      });
+
       this.dispatchOutboxMessages(outbox);
     }
   }

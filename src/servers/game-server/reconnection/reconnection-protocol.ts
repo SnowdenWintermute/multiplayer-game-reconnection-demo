@@ -148,7 +148,6 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     session: UserSession,
     game: MyGameClass
   ) {
-    console.log("running reconnectionTimeoutHandler");
     this.reconnectionOpportunityManager.remove(
       session.requireReconnectionKey()
     );
@@ -171,7 +170,6 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     });
 
     game.inputLock.remove(session.taggedUserId.id);
-    console.log("game inputlock:", game.inputLock);
 
     const leaveGameHandlerOutbox =
       await this.gameLifecycleController.leaveGameHandler(session);
@@ -207,9 +205,5 @@ export class GameServerReconnectionProtocol implements PlayerReconnectionProtoco
     // some randomly assigned name and we need to give them the name they had when they disconnected
     // so it will match their player in game
     session.username = reconnectionOpportunityOption.username;
-    console.log(
-      "set reconnected session username:",
-      reconnectionOpportunityOption.username
-    );
   }
 }

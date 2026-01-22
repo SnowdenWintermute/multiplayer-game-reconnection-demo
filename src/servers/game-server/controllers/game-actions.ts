@@ -27,7 +27,6 @@ export class GameActionsController {
         data: { message: ERROR_MESSAGES.GAME.INPUT_LOCKED },
       });
     } else {
-      console.log("user taking action:", session.username);
       outbox.pushToChannel(game.getChannelName(), {
         type: MessageFromServerType.PlayerTookAction,
         data: { username: session.username, action: "" },

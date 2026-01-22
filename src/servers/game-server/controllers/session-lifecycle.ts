@@ -101,8 +101,8 @@ export class GameServerSessionLifecycleController implements SessionLifecycleCon
     );
     this.userSessionRegistry.register(session);
 
-    // tell the client their username since if they are a reconnecting guest they will have some random
-    // username from the lobby and we want to give them the username they disconnected with
+    // tell the client their username since if they are a reconnecting user they won't have been told
+    // their username by the lobby
     outbox.pushToConnection(session.connectionId, {
       type: MessageFromServerType.ClientUsername,
       data: { username: session.username },
